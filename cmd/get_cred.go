@@ -74,23 +74,15 @@ func getCred(cmd *cobra.Command, args []string) {
 	Writeln("Login successful!")
 	Traceln("ID token: %s", idToken)
 
-	awsFedType := client.config.GetString(AWS_FEDERATION_TYPE)
 	maxSessionDurationSecondsString := client.config.GetString(MAX_SESSION_DURATION_SECONDS)
 	maxSessionDurationSeconds, err := strconv.ParseInt(maxSessionDurationSecondsString, 10, 64)
 	if err != nil {
 		maxSessionDurationSeconds = 3600
 	}
 
-	var awsCreds *AWSCredentials
-	if awsFedType == AWS_FEDERATION_TYPE_OIDC {
-		awsCreds, err = GetCredentialsWithOIDC(client, idToken, maxSessionDurationSeconds)
-		if err != nil {
-			Writeln("Failed to get aws credentials with OIDC")
-			Exit(err)
-		}
-	} else {
-		Writeln("Invalid AWS federation type")
-		Exit(err)
+	awsCreds, err := GetCredentialsWithOIDC(client, idToken, maxSessionDurationSeconds)
+	if err != nil {
+		fmt.Printf("Unable to get AWS Credentials: %v\n", err)
 	}
 
 	Writeln("")
@@ -120,7 +112,7 @@ func doLogin(client *OIDCClient) (*oauth2.Token, error) {
 
 	url := conf.AuthCodeURL("state")
 
-	code := launch(client, url, listener)
+	code := launch(url, listener)
 
 	tok, err := conf.Exchange(ctx, code)
 	if err != nil {
@@ -130,7 +122,7 @@ func doLogin(client *OIDCClient) (*oauth2.Token, error) {
 	return tok, err
 }
 
-func launch(client *OIDCClient, url string, listener net.Listener) string {
+func launch(url string, listener net.Listener) string {
 	c := make(chan string)
 
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
@@ -139,20 +131,6 @@ func launch(client *OIDCClient, url string, listener net.Listener) string {
 		code := q.Get("code")
 
 		res.Header().Set("Content-Type", "text/html")
-
-		// Redirect to user-defined successful/failure page
-		successful := client.RedirectToSuccessfulPage()
-		if successful != nil && code != "" {
-			url := successful.Url()
-			res.Header().Set("Location", (&url).String())
-			res.WriteHeader(302)
-		}
-		failure := client.RedirectToFailurePage()
-		if failure != nil && code == "" {
-			url := failure.Url()
-			res.Header().Set("Location", (&url).String())
-			res.WriteHeader(302)
-		}
 
 		// Response result page
 		message := "Login "
