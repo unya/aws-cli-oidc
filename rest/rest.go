@@ -1,20 +1,20 @@
 package rest
 
 import (
-	"net/url"
-	"net/http"
-	"crypto/tls"
-	"strings"
-	"io"
-	"encoding/json"
-	"io/ioutil"
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 // Wrapper around net/url and net/http.  Fluent style modeled from Java's JAX-RS
 
 type OAuthError struct {
-	err string `json:"error"`
+	err         string `json:"error"`
 	description string `json:"error_description"`
 }
 
@@ -39,25 +39,25 @@ type Response struct {
 
 func New() *RestClient {
 	tr := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	httpClient := &http.Client{
-	    Transport: tr,
-        CheckRedirect: func(req *http.Request, via []*http.Request) error {
-            return http.ErrUseLastResponse
-        },
-    }
+		Transport: tr,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 
 	return &RestClient{
 		httpClient: httpClient,
 	}
 }
 
-func (client *RestClient) Target(uri string) (*WebTarget) {
+func (client *RestClient) Target(uri string) *WebTarget {
 
 	url, err := url.Parse(uri)
-	if (err != nil) {
+	if err != nil {
 		return nil
 	}
 	return &WebTarget{
@@ -66,22 +66,22 @@ func (client *RestClient) Target(uri string) (*WebTarget) {
 	}
 }
 
-func (target *WebTarget) Url() (url.URL) {
+func (target *WebTarget) Url() url.URL {
 	return target.url
 }
 
-func (target *WebTarget) Path(path string) (*WebTarget) {
+func (target *WebTarget) Path(path string) *WebTarget {
 	newTarget := &WebTarget{
 		url:    target.url,
 		client: target.client,
 	}
 
-	if (strings.HasSuffix(target.url.Path, "/")) {
-		if (strings.HasPrefix(path, "/")) {
+	if strings.HasSuffix(target.url.Path, "/") {
+		if strings.HasPrefix(path, "/") {
 			path = path[1:]
 		}
 	} else {
-		if (!strings.HasPrefix(path, "/")) {
+		if !strings.HasPrefix(path, "/") {
 			path = "/" + path
 
 		}
@@ -131,7 +131,7 @@ func (r *Request) Get() (*Response, error) {
 	request, _ := http.NewRequest("GET", r.url.String(), nil)
 	request.Header = r.headers
 	res, err := r.client.httpClient.Do(request)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return &Response{res: res}, nil
@@ -141,7 +141,7 @@ func (r *Request) Delete() (*Response, error) {
 	request, _ := http.NewRequest("DELETE", r.url.String(), nil)
 	request.Header = r.headers
 	res, err := r.client.httpClient.Do(request)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return &Response{res: res}, nil
@@ -151,7 +151,7 @@ func (r *Request) Post() (*Response, error) {
 	request, _ := http.NewRequest("POST", r.url.String(), r.body)
 	request.Header = r.headers
 	res, err := r.client.httpClient.Do(request)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return &Response{res: res}, nil
@@ -159,28 +159,28 @@ func (r *Request) Post() (*Response, error) {
 
 func (r *Request) Put() (*Response, error) {
 	request, err := http.NewRequest("Put", r.url.String(), r.body)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	request.Header = r.headers
 	res, err := r.client.httpClient.Do(request)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return &Response{res: res}, nil
 }
 
-func (r *Response) Status() (int) {
+func (r *Response) Status() int {
 	return r.res.StatusCode
 }
 
-func (r *Response) Location() (string) {
+func (r *Response) Location() string {
 	return r.res.Header.Get("Location")
 }
 
 func (r *Response) ReadJson(data interface{}) error {
 	body, readErr := ioutil.ReadAll(r.res.Body)
-	if (readErr != nil) {
+	if readErr != nil {
 		return readErr
 	}
 	return json.Unmarshal(body, data)
@@ -188,7 +188,7 @@ func (r *Response) ReadJson(data interface{}) error {
 
 func (r *Response) ReadText() (string, error) {
 	body, err := ioutil.ReadAll(r.res.Body)
-	if (err != nil) {
+	if err != nil {
 		return "", err
 	}
 	return string(body), nil
@@ -202,10 +202,10 @@ func (r *Response) ReadBytes() ([]byte, error) {
 	return body, nil
 }
 
-func (r *Response) MediaType() (string) {
+func (r *Response) MediaType() string {
 	return r.res.Header.Get("Content-Type")
 }
 
-func (r *Response) Header(name string) (string) {
+func (r *Response) Header(name string) string {
 	return r.res.Header.Get(name)
 }
