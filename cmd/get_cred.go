@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -87,9 +89,25 @@ func getCred(cmd *cobra.Command, args []string) {
 
 	Writeln("")
 
-	Export("AWS_ACCESS_KEY_ID", awsCreds.AWSAccessKey)
-	Export("AWS_SECRET_ACCESS_KEY", awsCreds.AWSSecretKey)
-	Export("AWS_SESSION_TOKEN", awsCreds.AWSSessionToken)
+	type AWSCredentialsJson struct {
+		Version         int
+		AccessKeyId     string
+		SecretAccessKey string
+		SessionToken    string
+	}
+
+	awsCredsJson := AWSCredentialsJson{
+		Version:         1,
+		AccessKeyId:     awsCreds.AWSAccessKey,
+		SecretAccessKey: awsCreds.AWSSecretKey,
+		SessionToken:    awsCreds.AWSSessionToken,
+	}
+
+	json, err := json.Marshal(awsCredsJson)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	os.Stdout.Write(json)
 }
 
 func doLogin(client *OIDCClient) (*oauth2.Token, error) {
