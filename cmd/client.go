@@ -6,7 +6,7 @@ import (
 )
 
 type OIDCClient struct {
-	config     *viper.Viper
+	config *viper.Viper
 }
 
 func InitializeClient(name string) (*OIDCClient, error) {
