@@ -4,7 +4,7 @@ import (
 	// "fmt"
 	// "os"
 
-	"github.com/openstandia/aws-cli-oidc/cmd"
+	"github.com/mbrtargeting/aws-cli-oidc/cmd"
 )
 
 func main() {

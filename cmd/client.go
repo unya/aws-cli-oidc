@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/mbrtargeting/aws-cli-oidc/rest"
 	input "github.com/natsukagami/go-input"
-	"github.com/openstandia/aws-cli-oidc/rest"
 	"github.com/spf13/viper"
 )
 
