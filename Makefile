@@ -3,7 +3,7 @@ VERSION := v0.4.0
 REVISION := $(shell git rev-parse --short HEAD)
 
 SRCS    := $(shell find . -type f -name '*.go')
-LDFLAGS := -ldflags="-s -w -X \"github.com/openstandia/aws-cli-oidc/version.Version=$(VERSION)\" -X \"github.com/openstandia/aws-cli-oidc/version.Revision=$(REVISION)\" -extldflags -static"
+LDFLAGS := -ldflags="-s -w -X \"github.com/mbrtargeting/aws-cli-oidc/version.Version=$(VERSION)\" -X \"github.com/mbrtargeting/aws-cli-oidc/version.Revision=$(REVISION)\" -extldflags -static"
 
 DIST_DIRS := find * -type d -exec
 
