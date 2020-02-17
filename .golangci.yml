@@ -1,0 +1,8 @@
+linters:
+  enable:
+    - golint
+    - stylecheck
+    - gofmt
+    - goimports
+    - whitespace
+    - gocritic

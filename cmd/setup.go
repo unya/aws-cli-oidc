@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	input "github.com/natsukagami/go-input"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strconv"
 )
 
 var setupCmd = &cobra.Command{
@@ -61,15 +62,15 @@ func runSetup() {
 
 	config := map[string]string{}
 
-	config[CLIENT_ID] = clientID
-	config[CLIENT_SECRET] = clientSecret
-	config[MAX_SESSION_DURATION_SECONDS] = maxSessionDurationSeconds
-	config[AWS_FEDERATION_ROLE] = awsRole
-	config[AWS_FEDERATION_ROLE_SESSION_NAME] = awsRoleSessionName
+	config[ClientID] = clientID
+	config[ClientSecret] = clientSecret
+	config[MaxSessionDurationSeconds] = maxSessionDurationSeconds
+	config[AwsFederationRole] = awsRole
+	config[AwsFederationRoleSessionName] = awsRoleSessionName
 
 	viper.Set(providerName, config)
 
-	os.MkdirAll(ConfigPath(), 0700)
+	_ = os.MkdirAll(ConfigPath(), 0700)
 	configPath := ConfigPath() + "/config.yaml"
 	viper.SetConfigFile(configPath)
 	err := viper.WriteConfig()

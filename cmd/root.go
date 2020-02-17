@@ -25,13 +25,13 @@ func Execute() {
 
 var configdir string
 
-const CLIENT_ID = "client_id"
-const CLIENT_SECRET = "client_secret"
-const MAX_SESSION_DURATION_SECONDS = "max_session_duration_seconds"
+const ClientID = "client_id"
+const ClientSecret = "client_secret"
+const MaxSessionDurationSeconds = "max_session_duration_seconds"
 
 // OIDC config
-const AWS_FEDERATION_ROLE = "aws_federation_role"
-const AWS_FEDERATION_ROLE_SESSION_NAME = "aws_federation_role_session_name"
+const AwsFederationRole = "aws_federation_role"
+const AwsFederationRoleSessionName = "aws_federation_role_session_name"
 
 func init() {
 	cobra.OnInitialize(initConfig)

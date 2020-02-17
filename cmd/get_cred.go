@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/endpoints"
 
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
@@ -39,20 +39,6 @@ func init() {
 	rootCmd.AddCommand(getCredCmd)
 }
 
-type LoginParams struct {
-	ResponseType string `url:"response_type,omitempty"`
-	ClientId     string `url:"client_id,omitempty"`
-	RedirectUri  string `url:"redirect_uri,omitempty"`
-	Display      string `url:"display,omitempty"`
-	Scope        string `url:"scope,omitempty"`
-}
-
-type param struct {
-	name  string
-	label string
-	mask  bool
-}
-
 func getCred(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		Writeln("The OIDC provider name is required")
@@ -76,7 +62,7 @@ func getCred(cmd *cobra.Command, args []string) {
 	Writeln("Login successful!")
 	Traceln("ID token: %s", idToken)
 
-	maxSessionDurationSecondsString := client.config.GetString(MAX_SESSION_DURATION_SECONDS)
+	maxSessionDurationSecondsString := client.config.GetString(MaxSessionDurationSeconds)
 	maxSessionDurationSeconds, err := strconv.ParseInt(maxSessionDurationSecondsString, 10, 64)
 	if err != nil {
 		maxSessionDurationSeconds = 3600
@@ -89,25 +75,25 @@ func getCred(cmd *cobra.Command, args []string) {
 
 	Writeln("")
 
-	type AWSCredentialsJson struct {
+	type AWSCredentialsJSON struct {
 		Version         int
-		AccessKeyId     string
+		AccessKeyID     string
 		SecretAccessKey string
 		SessionToken    string
 	}
 
-	awsCredsJson := AWSCredentialsJson{
+	awsCredsJSON := AWSCredentialsJSON{
 		Version:         1,
-		AccessKeyId:     awsCreds.AWSAccessKey,
+		AccessKeyID:     awsCreds.AWSAccessKey,
 		SecretAccessKey: awsCreds.AWSSecretKey,
 		SessionToken:    awsCreds.AWSSessionToken,
 	}
 
-	json, err := json.Marshal(awsCredsJson)
+	jsonBytes, err := json.Marshal(awsCredsJSON)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	os.Stdout.Write(json)
+	os.Stdout.Write(jsonBytes)
 }
 
 func doLogin(client *OIDCClient) (*oauth2.Token, error) {
@@ -121,14 +107,15 @@ func doLogin(client *OIDCClient) (*oauth2.Token, error) {
 
 	ctx := context.Background()
 	conf := &oauth2.Config{
-		ClientID:     client.config.GetString(CLIENT_ID),
-		ClientSecret: client.config.GetString(CLIENT_SECRET),
-		Endpoint:     google.Endpoint,
+		ClientID:     client.config.GetString(ClientID),
+		ClientSecret: client.config.GetString(ClientSecret),
+		Endpoint:     endpoints.Google,
 		RedirectURL:  redirect,
 		Scopes:       []string{"openid", "email"},
 	}
 
-	url := conf.AuthCodeURL("state")
+	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+	println(url)
 
 	code := launch(url, listener)
 
@@ -160,7 +147,7 @@ func launch(url string, listener net.Listener) string {
 		res.Header().Set("Cache-Control", "no-store")
 		res.Header().Set("Pragma", "no-cache")
 		res.WriteHeader(200)
-		res.Write([]byte(fmt.Sprintf(`<!DOCTYPE html>
+		_, _ = res.Write([]byte(fmt.Sprintf(`<!DOCTYPE html>
 <body>
 %s
 </body>
@@ -178,12 +165,12 @@ func launch(url string, listener net.Listener) string {
 
 	srv := &http.Server{}
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	defer srv.Shutdown(ctx)
+	defer func() {
+		_ = srv.Shutdown(ctx)
+	}()
 
 	go func() {
-		if err := srv.Serve(listener); err != nil {
-			// cannot panic, because this probably is an intentional close
-		}
+		_ = srv.Serve(listener)
 	}()
 
 	var code string

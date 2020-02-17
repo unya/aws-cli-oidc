@@ -12,8 +12,8 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds 
 }
 
 func loginToStsUsingIDToken(client *OIDCClient, idToken string, durationSeconds int64) (*AWSCredentials, error) {
-	role := client.config.GetString(AWS_FEDERATION_ROLE)
-	roleSessionName := client.config.GetString(AWS_FEDERATION_ROLE_SESSION_NAME)
+	role := client.config.GetString(AwsFederationRole)
+	roleSessionName := client.config.GetString(AwsFederationRoleSessionName)
 
 	sess, err := session.NewSession()
 	if err != nil {
