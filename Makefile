@@ -1,6 +1,4 @@
 NAME := aws-cli-oidc
-VERSION := v0.4.0
-REVISION := $(shell git rev-parse --short HEAD)
 
 SRCS    := $(shell find . -type f -name '*.go')
 LDFLAGS := -ldflags="-s -w -extldflags -static"
@@ -36,8 +34,8 @@ dist:
 	cd dist && \
 	$(DIST_DIRS) cp ../LICENSE {} \; && \
 	$(DIST_DIRS) cp ../README.md {} \; && \
-	$(DIST_DIRS) tar -zcf $(NAME)-$(VERSION)-{}.tar.gz {} \; && \
-	$(DIST_DIRS) zip -r $(NAME)-$(VERSION)-{}.zip {} \; && \
+	$(DIST_DIRS) tar -zcf $(NAME)-{}.tar.gz {} \; && \
+	$(DIST_DIRS) zip -r $(NAME)-{}.zip {} \; && \
 	cd ..
 
 .PHONY: fast

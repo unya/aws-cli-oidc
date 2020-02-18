@@ -1,5 +1,9 @@
 name: Go
-on: [pull_request]
+on:
+  pull_request:
+    branches:
+      - master
+
 jobs:
 
   build:
@@ -29,4 +33,52 @@ jobs:
         run: make test
 
       - name: Build
-        run: make cross-build
+        run: make cross-build && make dist
+
+      - name: Create Release
+        id: create_release
+        if: github.event.pull_request.merged
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: rel-${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        id: upload-release-asset-windows
+        if: github.event.pull_request.merged
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/aws-cli-oidc-windows-amd64.zip
+          asset_name: aws-cli-oidc-${{ github.run_number }}-windows-amd64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset
+        id: upload-release-asset-linux
+        if: github.event.pull_request.merged
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/aws-cli-oidc-linux-amd64.zip
+          asset_name: aws-cli-oidc-${{ github.run_number }}-linux-amd64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Asset
+        id: upload-release-asset-darwin
+        if: github.event.pull_request.merged
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/aws-cli-oidc-darwin-amd64.zip
+          asset_name: aws-cli-oidc-${{ github.run_number }}-darwin-amd64.zip
+          asset_content_type: application/zip
