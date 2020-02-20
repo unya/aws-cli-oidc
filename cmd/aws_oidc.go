@@ -2,13 +2,15 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go/service/cognitoidentity"
 	"github.com/pkg/errors"
 )
 
@@ -48,12 +50,12 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds 
 		return awsCreds, nil
 	}
 
-	token, err := loginToStsUsingIDToken(client, idToken, durationSeconds)
+	creds, err := getCredentialsUsingIDToken(client, idToken, durationSeconds)
 	if err != nil {
 		return nil, err
 	}
 
-	awsCredsJSON, err := json.Marshal(token)
+	awsCredsJSON, err := json.Marshal(creds)
 	if err != nil {
 		return nil, err
 	}
@@ -73,40 +75,49 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds 
 		return nil, err
 	}
 
-	return token, err
+	return creds, err
 }
 
-func loginToStsUsingIDToken(client *OIDCClient, idToken string, durationSeconds int64) (*AWSCredentials, error) {
-	role := client.config.GetString(AwsFederationRole)
-	roleSessionName := client.config.GetString(AwsFederationRoleSessionName)
-
+func getCredentialsUsingIDToken(client *OIDCClient, idToken string, durationSeconds int64) (*AWSCredentials, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session")
 	}
 
-	svc := sts.New(sess)
+	identityPoolID := client.config.GetString(IdentityPoolID)
+	split := strings.SplitN(identityPoolID, ":", 2)
+	if len(split) != 2 {
+		return nil, errors.New("Identity pool ID does not contain the region")
+	}
+	region := split[0]
 
-	params := &sts.AssumeRoleWithWebIdentityInput{
-		RoleArn:          &role,
-		RoleSessionName:  &roleSessionName,
-		WebIdentityToken: &idToken,
-		DurationSeconds:  aws.Int64(durationSeconds),
+	login := map[string]*string{}
+	login[client.config.GetString(OIDCServer)] = &idToken
+
+	cognitoIdentity := cognitoidentity.New(sess, aws.NewConfig().WithRegion(region))
+
+	idResp, err := cognitoIdentity.GetId(&cognitoidentity.GetIdInput{
+		IdentityPoolId: &identityPoolID,
+		Logins:         login,
+	})
+	if err != nil {
+		fmt.Printf("Error retrieving GetId: %s", err)
+		return nil, err
 	}
 
-	Writeln("Requesting AWS credentials using ID Token")
-
-	resp, err := svc.AssumeRoleWithWebIdentity(params)
+	credsResp, err := cognitoIdentity.GetCredentialsForIdentity(&cognitoidentity.GetCredentialsForIdentityInput{
+		IdentityId: idResp.IdentityId,
+		Logins:     login,
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Error retrieving STS credentials using ID Token")
+		fmt.Printf("Error retrieving GetCredentialsForIdentity: %s", err)
+		return nil, err
 	}
 
 	return &AWSCredentials{
-		AWSAccessKey:     aws.StringValue(resp.Credentials.AccessKeyId),
-		AWSSecretKey:     aws.StringValue(resp.Credentials.SecretAccessKey),
-		AWSSessionToken:  aws.StringValue(resp.Credentials.SessionToken),
-		AWSSecurityToken: aws.StringValue(resp.Credentials.SessionToken),
-		PrincipalARN:     aws.StringValue(resp.AssumedRoleUser.Arn),
-		Expires:          resp.Credentials.Expiration.Local(),
+		AWSAccessKey:    aws.StringValue(credsResp.Credentials.AccessKeyId),
+		AWSSecretKey:    aws.StringValue(credsResp.Credentials.SecretKey),
+		AWSSessionToken: aws.StringValue(credsResp.Credentials.SessionToken),
+		Expires:         credsResp.Credentials.Expiration.Local(),
 	}, nil
 }

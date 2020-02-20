@@ -38,7 +38,7 @@ func runSetup() {
 	})
 	var authURL string
 	var tokenURL string
-	oidcServer, _ := ui.Ask("OIDC provider metadata URL (<server>/.well-known/openid-configuration):", &input.Options{
+	oidcServer, _ := ui.Ask("OIDC provider metadata server name (https://<server>/.well-known/openid-configuration):", &input.Options{
 		Required: true,
 		Loop:     true,
 		ValidateFunc: func(s string) error {
@@ -93,6 +93,10 @@ func runSetup() {
 			return nil
 		},
 	})
+	identityPoolID, _ := ui.Ask("AWS identity pool id:", &input.Options{
+		Required: true,
+		Loop:     true,
+	})
 	awsRole, _ := ui.Ask("AWS federation role (arn:aws:iam::<Account ID>:role/<Role Name>):", &input.Options{
 		Required: true,
 		Loop:     true,
@@ -110,6 +114,7 @@ func runSetup() {
 	config[ClientID] = clientID
 	config[ClientSecret] = clientSecret
 	config[MaxSessionDurationSeconds] = maxSessionDurationSeconds
+	config[IdentityPoolID] = identityPoolID
 	config[AwsFederationRole] = awsRole
 	config[AwsFederationRoleSessionName] = awsRoleSessionName
 

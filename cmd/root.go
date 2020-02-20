@@ -33,6 +33,7 @@ const ClientSecret = "client_secret"
 const MaxSessionDurationSeconds = "max_session_duration_seconds"
 
 // OIDC config
+const IdentityPoolID = "identity_pool"
 const AwsFederationRole = "aws_federation_role"
 const AwsFederationRoleSessionName = "aws_federation_role_session_name"
 
