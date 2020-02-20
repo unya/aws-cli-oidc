@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"strconv"
 
 	input "github.com/natsukagami/go-input"
@@ -30,6 +35,44 @@ func runSetup() {
 	providerName, _ := ui.Ask("OIDC provider name:", &input.Options{
 		Required: true,
 		Loop:     true,
+	})
+	var authURL string
+	var tokenURL string
+	oidcServer, _ := ui.Ask("OIDC provider metadata server name (https://<server>/.well-known/openid-configuration):", &input.Options{
+		Required: true,
+		Loop:     true,
+		ValidateFunc: func(s string) error {
+			u, err := url.Parse(s)
+			if err != nil {
+				return err
+			}
+
+			u.Path = path.Join(u.Path, ".well-known", "openid-configuration")
+			u.Scheme = "https"
+			res, err := http.Get(u.String())
+			if err != nil {
+				return err
+			}
+
+			type oidcMetadata struct {
+				AuthURL  string `json:"authorization_endpoint"`
+				TokenURL string `json:"token_endpoint"`
+			}
+
+			bytes, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return err
+			}
+
+			var meta oidcMetadata
+			if err := json.Unmarshal(bytes, &meta); err != nil {
+				return err
+			}
+
+			authURL = meta.AuthURL
+			tokenURL = meta.TokenURL
+			return nil
+		},
 	})
 	clientID, _ := ui.Ask("Client ID which is registered in the OIDC provider:", &input.Options{
 		Required: true,
@@ -62,6 +105,9 @@ func runSetup() {
 
 	config := map[string]string{}
 
+	config[OIDCServer] = oidcServer
+	config[AuthURL] = authURL
+	config[TokenURL] = tokenURL
 	config[ClientID] = clientID
 	config[ClientSecret] = clientSecret
 	config[MaxSessionDurationSeconds] = maxSessionDurationSeconds
