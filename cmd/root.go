@@ -25,6 +25,9 @@ func Execute() {
 
 var configdir string
 
+const OIDCServer = "oidc_server"
+const AuthURL = "auth_url"
+const TokenURL = "token_url"
 const ClientID = "client_id"
 const ClientSecret = "client_secret"
 const MaxSessionDurationSeconds = "max_session_duration_seconds"

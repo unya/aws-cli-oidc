@@ -11,13 +11,11 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/endpoints"
-
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 )
 
 const oidcTokenCache = "token.json"
@@ -131,9 +129,12 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 	conf := &oauth2.Config{
 		ClientID:     client.config.GetString(ClientID),
 		ClientSecret: client.config.GetString(ClientSecret),
-		Endpoint:     endpoints.Google,
-		RedirectURL:  "",
-		Scopes:       []string{"openid", "email"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  client.config.GetString(AuthURL),
+			TokenURL: client.config.GetString(TokenURL),
+		},
+		RedirectURL: "",
+		Scopes:      []string{"openid", "email"},
 	}
 
 	if token == nil { // cache miss
@@ -180,13 +181,13 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 }
 
 func doLogin(conf *oauth2.Config) (*oauth2.Token, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:")
+	listener, err := net.Listen("tcp", "localhost:52327")
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot start local http server to handle login redirect")
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
 
-	redirect := fmt.Sprintf("http://127.0.0.1:%d", port)
+	redirect := fmt.Sprintf("http://localhost:%d", port)
 	conf.RedirectURL = redirect
 
 	ctx := context.Background()
