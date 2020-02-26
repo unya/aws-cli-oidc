@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const awsCredentialsCache = "aws_token.json"
 const expiryDelta = 10 * time.Second
 
 type AWSCredentials struct {
@@ -32,6 +31,8 @@ func (cred AWSCredentials) Valid() bool {
 }
 
 func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds int64) (*AWSCredentials, error) {
+	awsCredentialsCache := ConfigPath() + "/" + client.name + "_aws.json"
+
 	jsonBytes, err := ioutil.ReadFile(awsCredentialsCache)
 	var awsCreds *AWSCredentials = nil
 	if err != nil {

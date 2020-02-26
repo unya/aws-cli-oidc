@@ -18,8 +18,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const oidcTokenCache = "token.json"
-
 var getCredCmd = &cobra.Command{
 	Use:   "get-cred <OIDC provider name>",
 	Short: "Get AWS credentials and out to stdout",
@@ -106,6 +104,8 @@ func getCred(cmd *cobra.Command, args []string) {
 }
 
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
+	oidcTokenCache := ConfigPath() + "/" + client.name + "_oidc.json"
+
 	writeBack := false
 
 	var token *oauth2.Token
@@ -152,6 +152,15 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 		tokenSource := conf.TokenSource(context.Background(), token)
 		token, err = tokenSource.Token()
 		if err != nil {
+			/*
+				TODO:
+					Currently, we have no way to determine if our refresh token expired (except via manual configuration,
+					that I want to avoid). This is the place, where we (I assume) should get some error in case our refresh
+					token expired. We should handle it by redirecting the user to the login screen (see doLogin()).
+					However, it is not entirely clear, how such an error message will look like and if it is standardized.
+					We could treat any error here as an expired refresh token, though, and repeat the log in. Should we get
+					an error here a second time, we know that it is not due to an expired refresh token and return nil.
+			*/
 			return nil, err
 		}
 	}

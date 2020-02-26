@@ -7,6 +7,7 @@ import (
 )
 
 type OIDCClient struct {
+	name   string
 	config *viper.Viper
 }
 
@@ -17,7 +18,7 @@ func InitializeClient(name string) (*OIDCClient, error) {
 		runSetup()
 	}
 
-	client := &OIDCClient{config}
+	client := &OIDCClient{name, config}
 
 	return client, nil
 }
