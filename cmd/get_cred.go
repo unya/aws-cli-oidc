@@ -105,10 +105,19 @@ func getCred(cmd *cobra.Command, args []string) {
 
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 	oidcTokenCache := ConfigPath() + "/" + client.name + "_oidc.json"
-
-	writeBack := false
+	conf := &oauth2.Config{
+		ClientID:     client.config.GetString(ClientID),
+		ClientSecret: client.config.GetString(ClientSecret),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  client.config.GetString(AuthURL),
+			TokenURL: client.config.GetString(TokenURL),
+		},
+		RedirectURL: "",
+		Scopes:      []string{"openid", "email"},
+	}
 
 	var token *oauth2.Token
+	writeBack := false
 
 	var oidcToken *oidcToken = nil
 	jsonRaw, err := ioutil.ReadFile(oidcTokenCache)
@@ -124,43 +133,23 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 
 	if oidcToken != nil { // cache hit
 		token = oidcToken.OAuth2Token()
+
+		if !token.Valid() {
+			writeBack = true
+
+			tokenSource := conf.TokenSource(context.Background(), token)
+			token, err = tokenSource.Token()
+			// If we get an error here, we assume that the refresh token expired. Since token remains nil, the next
+			// step will trigger a login flow.
+			_ = err
+		}
 	}
 
-	conf := &oauth2.Config{
-		ClientID:     client.config.GetString(ClientID),
-		ClientSecret: client.config.GetString(ClientSecret),
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  client.config.GetString(AuthURL),
-			TokenURL: client.config.GetString(TokenURL),
-		},
-		RedirectURL: "",
-		Scopes:      []string{"openid", "email"},
-	}
-
-	if token == nil { // cache miss
+	if token == nil { // cache miss or expired refresh token
 		writeBack = true
 
 		token, err = doLogin(conf)
 		if err != nil {
-			return nil, err
-		}
-	}
-
-	if !token.Valid() {
-		writeBack = true
-
-		tokenSource := conf.TokenSource(context.Background(), token)
-		token, err = tokenSource.Token()
-		if err != nil {
-			/*
-				TODO:
-					Currently, we have no way to determine if our refresh token expired (except via manual configuration,
-					that I want to avoid). This is the place, where we (I assume) should get some error in case our refresh
-					token expired. We should handle it by redirecting the user to the login screen (see doLogin()).
-					However, it is not entirely clear, how such an error message will look like and if it is standardized.
-					We could treat any error here as an expired refresh token, though, and repeat the log in. Should we get
-					an error here a second time, we know that it is not due to an expired refresh token and return nil.
-			*/
 			return nil, err
 		}
 	}
