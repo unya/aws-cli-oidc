@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"os"
 	"time"
 
@@ -95,7 +96,7 @@ func loginToStsUsingIDToken(client *OIDCClient, idToken string, durationSeconds 
 		DurationSeconds:  aws.Int64(durationSeconds),
 	}
 
-	Writeln("Requesting AWS credentials using ID Token")
+	log.Println("Requesting AWS credentials using ID Token")
 
 	resp, err := svc.AssumeRoleWithWebIdentity(params)
 	if err != nil {

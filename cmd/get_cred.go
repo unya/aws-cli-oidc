@@ -50,25 +50,22 @@ func (t oidcToken) OAuth2Token() *oauth2.Token {
 
 func getCred(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
-		Writeln("The OIDC provider name is required")
-		Exit(nil)
+		log.Fatalln("The OIDC provider name is required")
 	}
 	providerName := args[0]
 
 	client, err := CheckInstalled(providerName)
 	if err != nil {
-		Writeln("Failed to login OIDC provider")
-		Exit(err)
+		log.Fatalln("Failed to login OIDC provider")
 	}
 
 	tokenResponse, err := getOIDCToken(client)
 	if err != nil {
-		Writeln("Failed to login the OIDC provider")
-		Exit(err)
+		log.Fatalln("Failed to login the OIDC provider")
 	}
 
-	Writeln("Login successful!")
-	Traceln("ID token: %s", tokenResponse.IDToken)
+	log.Println("Login successful!")
+	log.Printf("ID token: %s\n", tokenResponse.IDToken)
 
 	maxSessionDurationSecondsString := client.config.GetString(MaxSessionDurationSeconds)
 	maxSessionDurationSeconds, err := strconv.ParseInt(maxSessionDurationSecondsString, 10, 64)
@@ -78,8 +75,7 @@ func getCred(cmd *cobra.Command, args []string) {
 
 	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, maxSessionDurationSeconds)
 	if err != nil {
-		fmt.Printf("Unable to get AWS Credentials: %v\n", err)
-		Exit(err)
+		log.Fatalf("Unable to get AWS Credentials: %v\n", err)
 	}
 
 	type awsCredentialsJSON struct {

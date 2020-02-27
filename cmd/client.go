@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 )
@@ -14,7 +14,7 @@ type OIDCClient struct {
 func InitializeClient(name string) (*OIDCClient, error) {
 	config := viper.Sub(name)
 	if config == nil {
-		fmt.Println("Configuration not found, creating a new one...")
+		log.Println("Configuration not found, creating a new one...")
 		runSetup()
 	}
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"strconv"
 
 	input "github.com/natsukagami/go-input"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -89,7 +89,7 @@ func runSetup() {
 		ValidateFunc: func(s string) error {
 			i, err := strconv.ParseInt(s, 10, 64)
 			if err != nil || i < 900 || i > 43200 {
-				return errors.New(fmt.Sprintf("Input must be 900-43200"))
+				return fmt.Errorf("input must be 900-43200")
 			}
 			return nil
 		},
@@ -122,9 +122,8 @@ func runSetup() {
 	err := viper.WriteConfig()
 
 	if err != nil {
-		Writeln("Failed to write %s", configPath)
-		Exit(err)
+		log.Fatalf("Failed to write %s\n", configPath)
 	}
 
-	Writeln("Saved %s", configPath)
+	log.Printf("Saved %s\n", configPath)
 }

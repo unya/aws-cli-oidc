@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"log"
 	"os"
-	"runtime"
 
 	homedir "github.com/mitchellh/go-homedir"
 	input "github.com/natsukagami/go-input"
@@ -19,7 +18,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		Writeln(err.Error())
+		log.Println(err.Error())
 	}
 }
 
@@ -41,21 +40,18 @@ func init() {
 }
 
 var ui *input.UI
-var isTraceEnabled bool
 
 func initConfig() {
 	viper.SetConfigFile(ConfigPath() + "/config.yaml")
 
 	if err := viper.ReadInConfig(); err == nil {
-		Writeln("Using config file: %s", viper.ConfigFileUsed())
+		log.Printf("Using config file: %s", viper.ConfigFileUsed())
 	}
 
 	ui = &input.UI{
 		Writer: os.Stdout,
 		Reader: os.Stdin,
 	}
-
-	isTraceEnabled = false // TODO: configuable
 }
 
 func ConfigPath() string {
@@ -66,44 +62,13 @@ func ConfigPath() string {
 	if path == "" {
 		home, err := homedir.Dir()
 		if err != nil {
-			Exit(err)
+			log.Fatalf("error: %v", err)
 		}
 		path = home + "/.aws-cli-oidc"
 	}
 	return path
 }
 
-func Exit(err error) {
-	if err != nil {
-		Writeln(err.Error())
-	}
-	os.Exit(1)
-}
-
 func CheckInstalled(name string) (*OIDCClient, error) {
 	return InitializeClient(name)
-}
-
-func Write(format string, msg ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, msg...)
-}
-
-func Writeln(format string, msg ...interface{}) {
-	fmt.Fprintln(os.Stderr, fmt.Sprintf(format, msg...))
-}
-
-func Export(key string, value string) {
-	var msg string
-	if runtime.GOOS == "windows" {
-		msg = fmt.Sprintf("set %s=%s\n", key, value)
-	} else {
-		msg = fmt.Sprintf("export %s=%s\n", key, value)
-	}
-	fmt.Fprint(os.Stdout, msg)
-}
-
-func Traceln(format string, msg ...interface{}) {
-	if isTraceEnabled {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf(format, msg...))
-	}
 }
