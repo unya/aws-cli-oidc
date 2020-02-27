@@ -94,14 +94,6 @@ func runSetup() {
 			return nil
 		},
 	})
-	awsRole, _ := ui.Ask("AWS federation role (arn:aws:iam::<Account ID>:role/<Role Name>):", &input.Options{
-		Required: true,
-		Loop:     true,
-	})
-	awsRoleSessionName, _ := ui.Ask("AWS federation roleSessionName:", &input.Options{
-		Required: true,
-		Loop:     true,
-	})
 
 	config := map[string]string{}
 
@@ -111,8 +103,6 @@ func runSetup() {
 	config[ClientID] = clientID
 	config[ClientSecret] = clientSecret
 	config[MaxSessionDurationSeconds] = maxSessionDurationSeconds
-	config[AwsFederationRole] = awsRole
-	config[AwsFederationRoleSessionName] = awsRoleSessionName
 
 	viper.Set(providerName, config)
 

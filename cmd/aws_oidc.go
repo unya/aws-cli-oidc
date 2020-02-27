@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -31,7 +32,7 @@ func (cred AWSCredentials) Valid() bool {
 	return !cred.Expires.Add(-expiryDelta).Before(time.Now())
 }
 
-func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds int64) (*AWSCredentials, error) {
+func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
 	awsCredentialsCache := ConfigPath() + "/" + client.name + "_aws.json"
 
 	jsonBytes, err := ioutil.ReadFile(awsCredentialsCache)
@@ -50,7 +51,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds 
 		return awsCreds, nil
 	}
 
-	token, err := loginToStsUsingIDToken(client, idToken, durationSeconds)
+	token, err := loginToStsUsingIDToken(client, idToken, roleARN, durationSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -78,10 +79,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, durationSeconds 
 	return token, err
 }
 
-func loginToStsUsingIDToken(client *OIDCClient, idToken string, durationSeconds int64) (*AWSCredentials, error) {
-	role := client.config.GetString(AwsFederationRole)
-	roleSessionName := client.config.GetString(AwsFederationRoleSessionName)
-
+func loginToStsUsingIDToken(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create session")
@@ -89,9 +87,18 @@ func loginToStsUsingIDToken(client *OIDCClient, idToken string, durationSeconds 
 
 	svc := sts.New(sess)
 
+	username := os.Getenv("USER")
+	split := strings.SplitN(roleARN, "/", 2)
+	var rolename string
+	if len(split) < 2 {
+		rolename = client.name
+	} else {
+		rolename = split[1]
+	}
+
 	params := &sts.AssumeRoleWithWebIdentityInput{
-		RoleArn:          &role,
-		RoleSessionName:  &roleSessionName,
+		RoleArn:          aws.String(roleARN),
+		RoleSessionName:  aws.String(username + "@" + rolename),
 		WebIdentityToken: &idToken,
 		DurationSeconds:  aws.Int64(durationSeconds),
 	}

@@ -19,7 +19,7 @@ import (
 )
 
 var getCredCmd = &cobra.Command{
-	Use:   "get-cred <OIDC provider name>",
+	Use:   "get-cred <OIDC provider name> <role>",
 	Short: "Get AWS credentials and out to stdout",
 	Long:  `Get AWS credentials and out to stdout through your OIDC provider authentication.`,
 	Run:   getCred,
@@ -49,10 +49,11 @@ func (t oidcToken) OAuth2Token() *oauth2.Token {
 }
 
 func getCred(cmd *cobra.Command, args []string) {
-	if len(args) < 1 {
-		log.Fatalln("The OIDC provider name is required")
+	if len(args) < 2 {
+		log.Fatalln("The OIDC provider name and role ARN is required")
 	}
 	providerName := args[0]
+	roleARN := args[1]
 
 	client, err := CheckInstalled(providerName)
 	if err != nil {
@@ -73,7 +74,7 @@ func getCred(cmd *cobra.Command, args []string) {
 		maxSessionDurationSeconds = 3600
 	}
 
-	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, maxSessionDurationSeconds)
+	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, maxSessionDurationSeconds)
 	if err != nil {
 		log.Fatalf("Unable to get AWS Credentials: %v\n", err)
 	}
