@@ -7,14 +7,22 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"strconv"
 
 	input "github.com/natsukagami/go-input"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
+
+type providerConfig struct {
+	OIDCServer                string `yaml:"oidc_server"`
+	AuthURL                   string `yaml:"auth_url"`
+	TokenURL                  string `yaml:"token_url"`
+	ClientID                  string `yaml:"client_id"`
+	ClientSecret              string `yaml:"client_secret"`
+	MaxSessionDurationSeconds string `yaml:"max_session_duration_seconds"`
+}
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
@@ -28,10 +36,13 @@ func init() {
 }
 
 func setup(cmd *cobra.Command, args []string) {
-	runSetup()
+	_, err := runSetup()
+	if err != nil {
+		log.Fatalf("Error during setup: %v\n", err)
+	}
 }
 
-func runSetup() {
+func runSetup() (*providerConfig, error) {
 	providerName, _ := ui.Ask("OIDC provider name:", &input.Options{
 		Required: true,
 		Loop:     true,
@@ -95,25 +106,37 @@ func runSetup() {
 		},
 	})
 
-	config := map[string]string{}
-
-	config[OIDCServer] = oidcServer
-	config[AuthURL] = authURL
-	config[TokenURL] = tokenURL
-	config[ClientID] = clientID
-	config[ClientSecret] = clientSecret
-	config[MaxSessionDurationSeconds] = maxSessionDurationSeconds
-
-	viper.Set(providerName, config)
-
-	_ = os.MkdirAll(ConfigPath(), 0700)
 	configPath := ConfigPath() + "/config.yaml"
-	viper.SetConfigFile(configPath)
-	err := viper.WriteConfig()
-
+	out, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		log.Fatalf("Failed to write %s\n", configPath)
+		return nil, fmt.Errorf("couldn't read config file")
 	}
 
+	var toolConfig map[string]*providerConfig
+	err = yaml.Unmarshal(out, &toolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing the config file")
+	}
+
+	updatedConfig := toolConfig[providerName]
+	updatedConfig.OIDCServer = oidcServer
+	updatedConfig.AuthURL = authURL
+	updatedConfig.TokenURL = tokenURL
+	updatedConfig.ClientID = clientID
+	updatedConfig.ClientSecret = clientSecret
+	updatedConfig.MaxSessionDurationSeconds = maxSessionDurationSeconds
+	toolConfig[providerName] = updatedConfig
+
+	bytes, err := yaml.Marshal(toolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal yaml config")
+	}
+
+	err = ioutil.WriteFile(configPath, bytes, 0700)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write config file")
+	}
 	log.Printf("Saved %s\n", configPath)
+
+	return updatedConfig, nil
 }

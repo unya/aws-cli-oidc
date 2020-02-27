@@ -1,21 +1,33 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
+	"io/ioutil"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 type OIDCClient struct {
 	name   string
-	config *viper.Viper
+	config *providerConfig
 }
 
 func InitializeClient(name string) (*OIDCClient, error) {
-	config := viper.Sub(name)
-	if config == nil {
-		log.Println("Configuration not found, creating a new one...")
-		runSetup()
+	configPath := ConfigPath() + "/config.yaml"
+	out, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read config file: %v", err)
+	}
+
+	var rootConfig map[string]*providerConfig
+	err = yaml.Unmarshal(out, &rootConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing the config file: %v", err)
+	}
+
+	config, exists := rootConfig[name]
+	if !exists {
+		return nil, fmt.Errorf("configuration not found, run setup to create one")
 	}
 
 	client := &OIDCClient{name, config}

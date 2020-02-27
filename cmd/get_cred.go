@@ -57,7 +57,7 @@ func getCred(cmd *cobra.Command, args []string) {
 
 	client, err := CheckInstalled(providerName)
 	if err != nil {
-		log.Fatalln("Failed to login OIDC provider")
+		log.Fatalf("Failed to login OIDC provider: %v\n", err)
 	}
 
 	tokenResponse, err := getOIDCToken(client)
@@ -68,7 +68,7 @@ func getCred(cmd *cobra.Command, args []string) {
 	log.Println("Login successful!")
 	log.Printf("ID token: %s\n", tokenResponse.IDToken)
 
-	maxSessionDurationSecondsString := client.config.GetString(MaxSessionDurationSeconds)
+	maxSessionDurationSecondsString := client.config.MaxSessionDurationSeconds
 	maxSessionDurationSeconds, err := strconv.ParseInt(maxSessionDurationSecondsString, 10, 64)
 	if err != nil {
 		maxSessionDurationSeconds = 3600
@@ -103,11 +103,11 @@ func getCred(cmd *cobra.Command, args []string) {
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 	oidcTokenCache := ConfigPath() + "/" + client.name + "_oidc.json"
 	conf := &oauth2.Config{
-		ClientID:     client.config.GetString(ClientID),
-		ClientSecret: client.config.GetString(ClientSecret),
+		ClientID:     client.config.ClientID,
+		ClientSecret: client.config.ClientSecret,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  client.config.GetString(AuthURL),
-			TokenURL: client.config.GetString(TokenURL),
+			AuthURL:  client.config.AuthURL,
+			TokenURL: client.config.TokenURL,
 		},
 		RedirectURL: "",
 		Scopes:      []string{"openid", "email"},

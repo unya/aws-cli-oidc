@@ -7,7 +7,6 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	input "github.com/natsukagami/go-input"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
@@ -24,17 +23,6 @@ func Execute() {
 
 var configdir string
 
-const OIDCServer = "oidc_server"
-const AuthURL = "auth_url"
-const TokenURL = "token_url"
-const ClientID = "client_id"
-const ClientSecret = "client_secret"
-const MaxSessionDurationSeconds = "max_session_duration_seconds"
-
-// OIDC config
-const AwsFederationRole = "aws_federation_role"
-const AwsFederationRoleSessionName = "aws_federation_role_session_name"
-
 func init() {
 	cobra.OnInitialize(initConfig)
 }
@@ -42,12 +30,6 @@ func init() {
 var ui *input.UI
 
 func initConfig() {
-	viper.SetConfigFile(ConfigPath() + "/config.yaml")
-
-	if err := viper.ReadInConfig(); err == nil {
-		log.Printf("Using config file: %s", viper.ConfigFileUsed())
-	}
-
 	ui = &input.UI{
 		Writer: os.Stdout,
 		Reader: os.Stdin,
