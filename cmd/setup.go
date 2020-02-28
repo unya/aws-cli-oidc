@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	input "github.com/natsukagami/go-input"
-	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
@@ -22,24 +21,6 @@ type providerConfig struct {
 	ClientID                  string `yaml:"client_id"`
 	ClientSecret              string `yaml:"client_secret"`
 	MaxSessionDurationSeconds string `yaml:"max_session_duration_seconds"`
-}
-
-var setupCmd = &cobra.Command{
-	Use:   "setup",
-	Short: "Interactive setup of aws-cli-oidc",
-	Long:  `Interactive setup of aws-cli-oidc. Will prompt you for OIDC provider URL and other settings.`,
-	Run:   setup,
-}
-
-func init() {
-	rootCmd.AddCommand(setupCmd)
-}
-
-func setup(cmd *cobra.Command, args []string) {
-	_, err := runSetup()
-	if err != nil {
-		log.Fatalf("Error during setup: %v\n", err)
-	}
 }
 
 func runSetup() (*providerConfig, error) {

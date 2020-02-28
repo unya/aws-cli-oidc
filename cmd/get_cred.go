@@ -13,21 +13,9 @@ import (
 
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
-
-var getCredCmd = &cobra.Command{
-	Use:   "get-cred <OIDC provider name> <role>",
-	Short: "Get AWS credentials and out to stdout",
-	Long:  `Get AWS credentials and out to stdout through your OIDC provider authentication.`,
-	Run:   getCred,
-}
-
-func init() {
-	rootCmd.AddCommand(getCredCmd)
-}
 
 type oidcToken struct {
 	*oauth2.Token
@@ -48,13 +36,7 @@ func (t oidcToken) OAuth2Token() *oauth2.Token {
 	})
 }
 
-func getCred(cmd *cobra.Command, args []string) {
-	if len(args) < 2 {
-		log.Fatalln("The OIDC provider name and role ARN is required")
-	}
-	providerName := args[0]
-	roleARN := args[1]
-
+func getCred(providerName string, roleARN string) {
 	client, err := CheckInstalled(providerName)
 	if err != nil {
 		log.Fatalf("Failed to login OIDC provider: %v\n", err)
