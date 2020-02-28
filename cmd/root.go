@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
-	input "github.com/natsukagami/go-input"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 type OIDCClient struct {
@@ -63,18 +62,8 @@ func getCredCmdRun(cmd *cobra.Command, args []string) {
 var configdir string
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	rootCmd.AddCommand(getCredCmd)
 	rootCmd.AddCommand(setupCmd)
-}
-
-var ui *input.UI
-
-func initConfig() {
-	ui = &input.UI{
-		Writer: os.Stdout,
-		Reader: os.Stdin,
-	}
 }
 
 func ConfigPath() string {
@@ -110,6 +99,5 @@ func CheckInstalled(name string) (*OIDCClient, error) {
 		return nil, fmt.Errorf("configuration not found, run setup to create one")
 	}
 
-	client := &OIDCClient{name, config}
-
-	return client, nil}
+	return &OIDCClient{name, config}, nil
+}

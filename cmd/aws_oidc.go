@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/pkg/errors"
 )
 
 const expiryDelta = 10 * time.Second
@@ -51,7 +51,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 		return awsCreds, nil
 	}
 
-	token, err := loginToStsUsingIDToken(client, idToken, roleARN, durationSeconds)
+	token, err := assumeRoleWithWebIdentity(client, idToken, roleARN, durationSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -79,35 +79,31 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 	return token, err
 }
 
-func loginToStsUsingIDToken(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
+func assumeRoleWithWebIdentity(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
 	sess, err := session.NewSession()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create session")
+		return nil, fmt.Errorf("failed to create session: %v", err)
 	}
 
 	svc := sts.New(sess)
 
 	username := os.Getenv("USER")
 	split := strings.SplitN(roleARN, "/", 2)
-	var rolename string
-	if len(split) < 2 {
-		rolename = client.name
-	} else {
+	rolename := client.name
+	if len(split) == 2 {
 		rolename = split[1]
-	}
-
-	params := &sts.AssumeRoleWithWebIdentityInput{
-		RoleArn:          aws.String(roleARN),
-		RoleSessionName:  aws.String(username + "@" + rolename),
-		WebIdentityToken: &idToken,
-		DurationSeconds:  aws.Int64(durationSeconds),
 	}
 
 	log.Println("Requesting AWS credentials using ID Token")
 
-	resp, err := svc.AssumeRoleWithWebIdentity(params)
+	resp, err := svc.AssumeRoleWithWebIdentity(&sts.AssumeRoleWithWebIdentityInput{
+		RoleArn:          aws.String(roleARN),
+		RoleSessionName:  aws.String(username + "@" + rolename),
+		WebIdentityToken: aws.String(idToken),
+		DurationSeconds:  aws.Int64(durationSeconds),
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Error retrieving STS credentials using ID Token")
+		return nil, fmt.Errorf("error retrieving STS credentials using ID Token: %v", err)
 	}
 
 	return &AWSCredentials{

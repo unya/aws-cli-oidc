@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 
@@ -20,7 +21,16 @@ type providerConfig struct {
 	TokenURL                  string `yaml:"token_url"`
 	ClientID                  string `yaml:"client_id"`
 	ClientSecret              string `yaml:"client_secret"`
-	MaxSessionDurationSeconds string `yaml:"max_session_duration_seconds"`
+	MaxSessionDurationSeconds int64  `yaml:"max_session_duration_seconds"`
+}
+
+var ui *input.UI
+
+func init() {
+	ui = &input.UI{
+		Writer: os.Stdout,
+		Reader: os.Stdin,
+	}
 }
 
 func runSetup() (*providerConfig, error) {
@@ -74,13 +84,14 @@ func runSetup() (*providerConfig, error) {
 		Default:  "",
 		Required: false,
 	})
-	maxSessionDurationSeconds, _ := ui.Ask("The max session duration, in seconds, of the role session [900-43200] (Default: 3600):", &input.Options{
+	var maxSessionDurationSecondsInt int64
+	_, _ = ui.Ask("The max session duration, in seconds, of the role session [900-43200] (Default: 3600):", &input.Options{
 		Default:  "3600",
 		Required: true,
 		Loop:     true,
 		ValidateFunc: func(s string) error {
-			i, err := strconv.ParseInt(s, 10, 64)
-			if err != nil || i < 900 || i > 43200 {
+			maxSessionDurationSecondsInt, err := strconv.ParseInt(s, 10, 64)
+			if err != nil || maxSessionDurationSecondsInt < 900 || maxSessionDurationSecondsInt > 43200 {
 				return fmt.Errorf("input must be 900-43200")
 			}
 			return nil
@@ -105,7 +116,7 @@ func runSetup() (*providerConfig, error) {
 	updatedConfig.TokenURL = tokenURL
 	updatedConfig.ClientID = clientID
 	updatedConfig.ClientSecret = clientSecret
-	updatedConfig.MaxSessionDurationSeconds = maxSessionDurationSeconds
+	updatedConfig.MaxSessionDurationSeconds = maxSessionDurationSecondsInt
 	toolConfig[providerName] = updatedConfig
 
 	bytes, err := yaml.Marshal(toolConfig)

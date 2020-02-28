@@ -8,11 +8,9 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/pkg/browser"
-	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
@@ -50,13 +48,7 @@ func getCred(providerName string, roleARN string) {
 	log.Println("Login successful!")
 	log.Printf("ID token: %s\n", tokenResponse.IDToken)
 
-	maxSessionDurationSecondsString := client.config.MaxSessionDurationSeconds
-	maxSessionDurationSeconds, err := strconv.ParseInt(maxSessionDurationSecondsString, 10, 64)
-	if err != nil {
-		maxSessionDurationSeconds = 3600
-	}
-
-	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, maxSessionDurationSeconds)
+	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, client.config.MaxSessionDurationSeconds)
 	if err != nil {
 		log.Fatalf("Unable to get AWS Credentials: %v\n", err)
 	}
@@ -161,7 +153,7 @@ func doLogin(conf *oauth2.Config) (*oauth2.Token, error) {
 	address := "localhost:52327"
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		return nil, errors.Wrap(err, "Cannot start local http server to handle login redirect")
+		return nil, fmt.Errorf("cannot start local http server to handle login redirect: %v", err)
 	}
 
 	conf.RedirectURL = "http://" + address
