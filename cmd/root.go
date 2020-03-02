@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/docopt/docopt-go"
-	homedir "github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
 )
 
@@ -62,7 +61,7 @@ func ConfigPath() string {
 	}
 	path := os.Getenv("AWS_CLI_OIDC_CONFIG")
 	if path == "" {
-		home, err := homedir.Dir()
+		home, err := os.UserHomeDir()
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}

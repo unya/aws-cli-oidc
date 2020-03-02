@@ -3,7 +3,6 @@ module github.com/mbrtargeting/aws-cli-oidc
 require (
 	github.com/aws/aws-sdk-go v1.15.50
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
-	github.com/mitchellh/go-homedir v1.0.0
 	github.com/natsukagami/go-input v0.0.0-20180603034138-38bb793e9754
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	golang.org/x/crypto v0.0.0-20200210222208-86ce3cb69678 // indirect
