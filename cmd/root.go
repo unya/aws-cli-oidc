@@ -23,7 +23,7 @@ func Execute() {
 
 Usage:
   aws-cli-oidc get-cred <idp> <role>
-  aws-cli-oidc setup
+  aws-cli-oidc setup <idp>
   aws-cli-oidc -h | --help
 
 Options:
@@ -47,7 +47,7 @@ Options:
 	if conf.GetCred {
 		getCred(conf.ProviderName, conf.RoleARN)
 	} else if conf.Setup {
-		_, err := runSetup()
+		_, err := runSetup(conf.ProviderName)
 		if err != nil {
 			log.Fatalf("Error during setup: %v\n", err)
 		}

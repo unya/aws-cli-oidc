@@ -33,11 +33,7 @@ func init() {
 	}
 }
 
-func runSetup() (*providerConfig, error) {
-	providerName, _ := ui.Ask("OIDC provider name:", &input.Options{
-		Required: true,
-		Loop:     true,
-	})
+func runSetup(providerName string) (*providerConfig, error) {
 	var authURL string
 	var tokenURL string
 	oidcServer, _ := ui.Ask("OIDC provider metadata server name (https://<server>/.well-known/openid-configuration):", &input.Options{
