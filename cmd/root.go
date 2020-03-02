@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/docopt/docopt-go"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
@@ -16,55 +16,45 @@ type OIDCClient struct {
 	config *providerConfig
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "aws-cli-oidc",
-	Short: "CLI tool for retrieving AWS temporary credentials using OIDC provider",
-	Long:  `CLI tool for retrieving AWS temporary credentials using OIDC provider`,
-}
-
-var getCredCmd = &cobra.Command{
-	Use:   "get-cred <OIDC provider name> <role>",
-	Short: "Get AWS credentials and out to stdout",
-	Long:  `Get AWS credentials and out to stdout through your OIDC provider authentication.`,
-	Run:   getCredCmdRun,
-}
-
-var setupCmd = &cobra.Command{
-	Use:   "setup",
-	Short: "Interactive setup of aws-cli-oidc",
-	Long:  `Interactive setup of aws-cli-oidc. Will prompt you for OIDC provider URL and other settings.`,
-	Run:   setupCmdRun,
-}
-
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Println(err.Error())
-	}
-}
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-func setupCmdRun(cmd *cobra.Command, args []string) {
-	_, err := runSetup()
+	usage := `aws-cli-oidc.
+
+Usage:
+  aws-cli-oidc get-cred <idp> <role>
+  aws-cli-oidc setup
+  aws-cli-oidc -h | --help
+
+Options:
+  -h --help  Show this screen.`
+
+	arguments, err := docopt.ParseDoc(usage)
 	if err != nil {
-		log.Fatalf("Error during setup: %v\n", err)
+		log.Fatalf("%v\n", err)
 	}
-}
 
-func getCredCmdRun(cmd *cobra.Command, args []string) {
-	if len(args) < 2 {
-		log.Fatalln("The OIDC provider name and role ARN is required")
+	var conf struct {
+		GetCred      bool   `docopt:"get-cred"`
+		Setup        bool   `docopt:"setup"`
+		ProviderName string `docopt:"<idp>"`
+		RoleARN      string `docopt:"<role>"`
 	}
-	providerName := args[0]
-	roleARN := args[1]
+	if err := arguments.Bind(&conf); err != nil {
+		log.Fatalf("%v\n", err)
+	}
 
-	getCred(providerName, roleARN)
+	if conf.GetCred {
+		getCred(conf.ProviderName, conf.RoleARN)
+	} else if conf.Setup {
+		_, err := runSetup()
+		if err != nil {
+			log.Fatalf("Error during setup: %v\n", err)
+		}
+	}
 }
 
 var configdir string
-
-func init() {
-	rootCmd.AddCommand(getCredCmd)
-	rootCmd.AddCommand(setupCmd)
-}
 
 func ConfigPath() string {
 	if configdir != "" {
