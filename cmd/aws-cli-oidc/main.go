@@ -1,12 +1,46 @@
 package main
 
 import (
-	// "fmt"
-	// "os"
+	"log"
 
+	"github.com/docopt/docopt-go"
 	"github.com/mbrtargeting/aws-cli-oidc/internal"
 )
 
 func main() {
-	cmd.Execute()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	usage := `aws-cli-oidc.
+
+Usage:
+  aws-cli-oidc get-cred <idp> <role>
+  aws-cli-oidc setup <idp>
+  aws-cli-oidc -h | --help
+
+Options:
+  -h --help  Show this screen.`
+
+	arguments, err := docopt.ParseDoc(usage)
+	if err != nil {
+		log.Fatalf("%v\n", err)
+	}
+
+	var conf struct {
+		GetCred      bool   `docopt:"get-cred"`
+		Setup        bool   `docopt:"setup"`
+		ProviderName string `docopt:"<idp>"`
+		RoleARN      string `docopt:"<role>"`
+	}
+	if err := arguments.Bind(&conf); err != nil {
+		log.Fatalf("%v\n", err)
+	}
+
+	if conf.GetCred {
+		internal.GetCred(conf.ProviderName, conf.RoleARN)
+	} else if conf.Setup {
+		err := internal.RunSetup(conf.ProviderName)
+		if err != nil {
+			log.Fatalf("Error during setup: %v\n", err)
+		}
+	}
 }

@@ -1,4 +1,4 @@
-package cmd
+package internal
 
 import (
 	"encoding/json"
@@ -14,6 +14,11 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
+
+type OIDCClient struct {
+	name   string
+	config *providerConfig
+}
 
 type oidcToken struct {
 	*oauth2.Token
@@ -34,11 +39,12 @@ func (t oidcToken) OAuth2Token() *oauth2.Token {
 	})
 }
 
-func getCred(providerName string, roleARN string) {
-	client, err := CheckInstalled(providerName)
+func GetCred(providerName string, roleARN string) {
+	config, err := readProviderConfig(providerName)
 	if err != nil {
 		log.Fatalf("Failed to login OIDC provider: %v\n", err)
 	}
+	client := &OIDCClient{providerName, config}
 
 	tokenResponse, err := getOIDCToken(client)
 	if err != nil {
