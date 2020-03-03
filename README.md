@@ -1,15 +1,17 @@
 # aws-cli-oidc
 
-CLI tool for retrieving AWS temporary credentials using OIDC provider.
+CLI tool for retrieving temporary AWS credentials using an OIDC provider.
 
 
 ## How does it work?
 
-[AWS Identity Providers and Federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers.html) supports IdPs that are compatible with [OpenID Connect (OIDC)](http://openid.net/connect/). This tool works as an OIDC client. If the federation between the AWS account and the IdP is established, and an OIDC client for this tool is registered in the IdP, you can get AWS temporary credentials via standard browser login. It means you don't need to pass your credential of the IdP to this tool.
+[AWS Identity Providers and Federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers.html)
+supports IdPs that are compatible with [OpenID Connect (OIDC)](http://openid.net/connect/). This tool works as an OIDC
+client. If the federation between the AWS account and the IdP is established, and an OIDC client for this tool is
+registered in the IdP, you can get AWS temporary credentials via standard browser login. It means you don't need to pass
+your credential of the IdP to this tool.
 
 Please refer the following diagrams how it works.
-
-### Federation type: OIDC
 
 ![flow with oidc](flow-with-oidc.png)
 
@@ -17,62 +19,80 @@ Please refer the following diagrams how it works.
 
 Before using this tool, the system administrator need to setup the following configuration.
 
-- Identity Federation using OIDC between AWS and the OIDC provider. See https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers.html
-- Registration OIDC/OAuth2 client for this CLI tool in the OIDC provider. Note: The OIDC provider must allow any port to be specified at the time of the request for loopback IP redirect URIs because this tool follows [RFC 8252 OAuth 2.0 for Native Apps 7.3 Loopback Interface Redirection](https://tools.ietf.org/html/rfc8252#section-7.3).
-
-Also depending on the federation type between AWS and the OIDC provider, requirements for the OIDC providers will change.
-
-### Federation type: OIDC
-
-- The OIDC provider only needs to support OIDC. SAML2 and OAuth 2.0 Token Exchange are not necessary. Very simple.
-- However, the JWKS endpoint of the OIDC provider needs to export it to the Internet because AWS try to access the endpoint to obtain the public key and to verify the ID token which is issued by the provider.
+- Identity Federation using OIDC between AWS and the OIDC provider.
+  See https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers.html
+- Registration of an OIDC/OAuth2 client for this CLI tool in the OIDC provider.
+  Note: The OIDC provider must allow `http://localhost:52327` to be specified as a redirect URL.
 
 ## Tested OIDC Provider
 
 - [Google account](https://accounts.google.com/.well-known/openid-configuration)
+- Cognito User Pool
 
 ## Install
 
-Download from [Releases page](https://github.com/mbrtargeting/aws-cli-oidc/releases).
+Download from the [Releases page](https://github.com/mbrtargeting/aws-cli-oidc/releases).
 
 
 ## Usage
 
 ```
-CLI tool for retrieving AWS temporary credentials using OIDC provider
+aws-cli-oidc.
 
 Usage:
-  aws-cli-oidc [command]
+  aws-cli-oidc get-cred <idp> <role>
+  aws-cli-oidc setup <idp>
+  aws-cli-oidc -h | --help
 
-Available Commands:
-  get-cred    Get AWS credentials and out to stdout
-  help        Help about any command
-  setup       Interactive setup of aws-cli-oidc
-
-Flags:
-  -h, --help   help for aws-cli-oidc
-
-Use "aws-cli-oidc [command] --help" for more information about a command.
+Options:
+  -h --help  Show this screen.
 ```
-
 
 ### Setup
 
-Use `aws-cli-oidc setup` command and follow the guide.
+Before you use tool you need to setup an identity provider first.
+There are two options to do so.
 
+The first one is to provide a YAML file containing the configuration.
+An example configuration with an identity provider named "google" might look like this:
+```
+google:
+  oidc_server: accounts.google.com
+  auth_url: https://accounts.google.com/o/oauth2/v2/auth
+  token_url: https://oauth2.googleapis.com/token
+  client_id: my_client_id
+  client_secret: my_client_secret
+  max_session_duration_seconds: 3600
+```
+This file must be saved as `$AWS_CLI_OIDC_CONFIG/config.yaml` where `AWS_CLI_OIDC_CONFIG` is an environment variable
+pointing to the root config folder.
+If `AWS_CLI_OIDC_CONFIG` is not set it defaults to `~/.aws-cli-oidc/`.
 
-### Get AWS temporary credentials
+The alternative to writing a config file by hand is to use the guided setup via `aws-cli-oidc setup <idp>`
+where `<idp>` is the name you wish to give to this configuration (like "google" in the above example).
+After finishing this guided survey, the tool will append the resulting provider configuration to the
+config file.
 
-Use `aws-cli-oidc get-cred <your oidc provider name>` command. 
+When you are done with the configuration, you can reference the providers `aws-cli-oidc get-cred <idp> <role>` using
+the short name you gave them (`aws-cli-oidc get-cred google <role>` for the above example).
+
+### Get temporary AWS credentials
+
+To obtain temporary AWS credential, execute the `aws-cli-oidc get-cred <idp> <role>` command where `<idp>` is the name
+of a configured identity provider and `<role>` is the role you want to assume on a AWS account
+(for example, `aws-cli-oidc get-cred google arn:aws:iam::123443211234:role/my-role`).
 If you did not log in for a long time or if you are using the tool for the first time, it opens your browser for you to authenticate.
-If the authentication is successful, AWS temporary credentials will be output in a JSON format.
+If the authentication is successful, AWS temporary credentials will be output in the JSON format.
 
 You can also use this tool directly as a credential process.
-Just add the following lines to your `.aws/credentials` file.
+For this, add the following lines to your `.aws/credentials` file.
 ```
 [my-profile]
-credential_process = aws-cli-oidc get-cred google
+credential_process=aws-cli-oidc get-cred google
 ```
+and make sure that the `aws-cli-oidc` is on your `PATH` or, alternatively, provide the full path to the binary in the
+configuration above.
+
 
 ## Licence
 
