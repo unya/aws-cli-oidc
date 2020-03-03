@@ -36,7 +36,10 @@ Options:
 	}
 
 	if conf.GetCred {
-		internal.GetCred(conf.ProviderName, conf.RoleARN)
+		err := internal.GetCred(conf.ProviderName, conf.RoleARN)
+		if err != nil {
+			log.Fatalf("Error during get-cred: %v\n", err)
+		}
 	} else if conf.Setup {
 		err := internal.RunSetup(conf.ProviderName)
 		if err != nil {

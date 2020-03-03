@@ -39,16 +39,16 @@ func (t oidcToken) OAuth2Token() *oauth2.Token {
 	})
 }
 
-func GetCred(providerName string, roleARN string) {
+func GetCred(providerName string, roleARN string) error {
 	config, err := readProviderConfig(providerName)
 	if err != nil {
-		log.Fatalf("Failed to login OIDC provider: %v\n", err)
+		return fmt.Errorf("failed to login OIDC provider: %v", err)
 	}
 	client := &OIDCClient{providerName, config}
 
 	tokenResponse, err := getOIDCToken(client)
 	if err != nil {
-		log.Fatalln("Failed to login the OIDC provider")
+		return fmt.Errorf("failed to login the OIDC provider")
 	}
 
 	log.Println("Login successful!")
@@ -56,7 +56,7 @@ func GetCred(providerName string, roleARN string) {
 
 	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, client.config.MaxSessionDurationSeconds)
 	if err != nil {
-		log.Fatalf("Unable to get AWS Credentials: %v\n", err)
+		return fmt.Errorf("unable to get AWS Credentials: %v", err)
 	}
 
 	type awsCredentialsJSON struct {
@@ -75,9 +75,11 @@ func GetCred(providerName string, roleARN string) {
 
 	jsonBytes, err := json.Marshal(awsCredsJSON)
 	if err != nil {
-		fmt.Println("error:", err)
+		return fmt.Errorf("error: %v", err)
 	}
 	os.Stdout.Write(jsonBytes)
+
+	return nil
 }
 
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
@@ -173,7 +175,7 @@ func doLogin(conf *oauth2.Config) (*oauth2.Token, error) {
 
 	tok, err := conf.Exchange(ctx, code)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error during token exchange: %v", err)
 	}
 
 	return tok, err
