@@ -1,5 +1,6 @@
 # Binaries for programs and plugins
-aws-cli-oidc
+bin/
+dist/
 *.exe
 *.exe~
 *.dll

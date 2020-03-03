@@ -8,7 +8,7 @@ DIST_DIRS := find * -type d -exec
 .DEFAULT_GOAL := bin/$(NAME)
 
 bin/$(NAME): $(SRCS)
-	go build $(LDFLAGS) -o bin/$(NAME)
+	go build $(LDFLAGS) -o bin/$(NAME) cmd/$(NAME)/main.go
 
 .PHONY: clean
 clean:
@@ -21,7 +21,7 @@ cross-build:
 	for os in darwin linux windows; do \
 	    [ $$os = "windows" ] && EXT=".exe"; \
 		for arch in amd64; do \
-			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o dist/$$os-$$arch/$(NAME)$$EXT; \
+			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o dist/$$os-$$arch/$(NAME)$$EXT cmd/$(NAME)/main.go; \
 		done; \
 	done
 
@@ -38,20 +38,11 @@ dist:
 	$(DIST_DIRS) zip -r $(NAME)-{}.zip {} \; && \
 	cd ..
 
-.PHONY: fast
-fast:
-	go build $(LDFLAGS) -o bin/$(NAME)
-
 .PHONY: install
 install:
 	go install $(LDFLAGS)
 
-.PHONY: release
-release:
-	git tag $(VERSION)
-	git push origin $(VERSION)
-
 .PHONY: test
 test:
-	go test -cover -v
+	go test -cover -v ./internal/...
 
