@@ -11,9 +11,34 @@ client. If the federation between the AWS account and the IdP is established, an
 registered in the IdP, you can get AWS temporary credentials via standard browser login. It means you don't need to pass
 your credential of the IdP to this tool.
 
-Please refer the following diagrams how it works.
+Please refer to the following diagrams on how it works.
+Steps (1) and (2) are slightly simplified as there is more going on but it should give an overview.
 
-![flow with oidc](flow-with-oidc.png)
+```
+                (1) authenticate user [username, password]        +---------------+
+    +------------------------------------------------------------>|               |
+    |                                                             | OIDC Provider |
+    |      +------------------------------------------------------|               |
+    |      |       (2) authentication successful [id_token]       +---------------+
+    |      |                                                                |
+    |      v                                                                |
++--------------+                                                            |
+|              |                                        trust OIDC provider |
+| aws-cli-oidc |                                                            |
+|              |                                                            |
++--------------+                     AWS                                    |
+    ^      |                       +----------------------------------------|-----+
+    |      | (3) assume role A     |  +---------+       +--------+--------------+ |
+    |      |     [id_token]        |  |   STS   |      -| Role A | Trust Policy | |
+    |      +------------------------->|         |    -/ +--------+--------------+ |
+    |                              |  |         | --/             .               |
+    |                              |  |         |/                .               |
+    |                              |  |         |                 .               |
+    +---------------------------------|         |       +--------+--------------+ |
+     (4) temporary AWS credential  |  |         |       | Role Z | Trust Policy | |
+         [aws_key, aws_secret]     |  +---------+       +--------+--------------+ |
+                                   +----------------------------------------------+
+```
 
 ## Prerequisite AWS and OIDC provider settings before using this tool
 
@@ -88,9 +113,9 @@ You can also use this tool directly as a credential process.
 For this, add the following lines to your `.aws/credentials` file.
 ```
 [my-profile]
-credential_process=aws-cli-oidc get-cred google
+credential_process=aws-cli-oidc get-cred google arn:aws:iam::123443211234:role/my-role
 ```
-and make sure that the `aws-cli-oidc` is on your `PATH` or, alternatively, provide the full path to the binary in the
+And make sure that the `aws-cli-oidc` is on your `PATH` or, alternatively, provide the full path to the binary in the
 configuration above.
 
 
