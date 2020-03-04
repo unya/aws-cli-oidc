@@ -43,3 +43,6 @@ install:
 test:
 	go test -cover -v ./internal/...
 
+.PHONY: lint
+lint:
+	golangci-lint run
