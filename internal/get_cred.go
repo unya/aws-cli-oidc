@@ -25,6 +25,13 @@ type oidcToken struct {
 	IDToken string `json:"id_token,omitempty"`
 }
 
+type AWSCredentialsJSON struct {
+	Version         int
+	AccessKeyID     string `json:"AccessKeyId"`
+	SecretAccessKey string
+	SessionToken    string
+}
+
 func oidcTokenFromOAuth2Token(token *oauth2.Token) *oidcToken {
 	oidcToken := &oidcToken{
 		Token:   token,
@@ -59,14 +66,7 @@ func GetCred(providerName string, roleARN string) error {
 		return fmt.Errorf("unable to get AWS Credentials: %v", err)
 	}
 
-	type awsCredentialsJSON struct {
-		Version         int
-		AccessKeyID     string `json:"AccessKeyId"`
-		SecretAccessKey string
-		SessionToken    string
-	}
-
-	awsCredsJSON := awsCredentialsJSON{
+	awsCredsJSON := AWSCredentialsJSON{
 		Version:         1,
 		AccessKeyID:     awsCreds.AWSAccessKey,
 		SecretAccessKey: awsCreds.AWSSecretKey,

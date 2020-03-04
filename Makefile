@@ -1,14 +1,11 @@
 NAME := aws-cli-oidc
 
-SRCS    := $(shell find . -type f -name '*.go')
 LDFLAGS := -ldflags="-s -w -extldflags -static"
 
 DIST_DIRS := find * -type d -exec
 
-.DEFAULT_GOAL := bin/$(NAME)
-
-bin/$(NAME): $(SRCS)
-	go build $(LDFLAGS) -o bin/$(NAME) cmd/$(NAME)/main.go
+build:
+	go build $(LDFLAGS) -o ./bin/ ./cmd/...
 
 .PHONY: clean
 clean:
@@ -19,9 +16,9 @@ clean:
 .PHONY: cross-build
 cross-build:
 	for os in darwin linux windows; do \
-	    [ $$os = "windows" ] && EXT=".exe"; \
 		for arch in amd64; do \
-			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -a -tags netgo -installsuffix netgo $(LDFLAGS) -o dist/$$os-$$arch/$(NAME)$$EXT cmd/$(NAME)/main.go; \
+			mkdir -p ./dist/$$os-$$arch/; \
+			GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -a $(LDFLAGS) -o ./dist/$$os-$$arch/ ./cmd/...; \
 		done; \
 	done
 
