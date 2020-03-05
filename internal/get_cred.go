@@ -55,7 +55,7 @@ func GetCred(providerName string, roleARN string) error {
 
 	tokenResponse, err := getOIDCToken(client)
 	if err != nil {
-		return fmt.Errorf("failed to login the OIDC provider")
+		return fmt.Errorf("failed to login the OIDC provider: %v", err)
 	}
 
 	log.Println("Login successful!")
@@ -83,7 +83,7 @@ func GetCred(providerName string, roleARN string) error {
 }
 
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
-	oidcTokenCache := ConfigPath() + "/" + client.name + "_oidc.json"
+	oidcTokenCache := cacheFolder + "/" + client.name + "_oidc.json"
 	conf := &oauth2.Config{
 		ClientID:     client.config.ClientID,
 		ClientSecret: client.config.ClientSecret,

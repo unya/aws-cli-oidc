@@ -33,7 +33,7 @@ func (cred AWSCredentials) Valid() bool {
 }
 
 func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
-	awsCredentialsCache := ConfigPath() + "/" + client.name + "_aws.json"
+	awsCredentialsCache := cacheFolder + "/" + client.name + "_aws.json"
 
 	jsonBytes, err := ioutil.ReadFile(awsCredentialsCache)
 	var awsCreds *AWSCredentials = nil

@@ -29,7 +29,21 @@ func ConfigPath() string {
 	return home + "/.aws-cli-oidc/config.yaml"
 }
 
+func CacheFolder() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	dir := home + "/.aws-cli-oidc/cache"
+	err = os.MkdirAll(dir, 0700)
+	if err != nil {
+		dir = home + "/.aws-cli-oidc"
+	}
+	return dir
+}
+
 var configPath = ConfigPath()
+var cacheFolder = CacheFolder()
 
 func readConfig() (map[string]*providerConfig, error) {
 	out, err := ioutil.ReadFile(configPath)
