@@ -59,7 +59,6 @@ func GetCred(providerName string, roleARN string) error {
 	}
 
 	log.Println("Login successful!")
-	log.Printf("ID token: %s\n", tokenResponse.IDToken)
 
 	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, client.config.MaxSessionDurationSeconds)
 	if err != nil {
