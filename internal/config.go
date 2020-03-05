@@ -3,7 +3,6 @@ package internal
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -18,24 +17,19 @@ type providerConfig struct {
 	MaxSessionDurationSeconds int64  `yaml:"max_session_duration_seconds"`
 }
 
-var configdir string
-
 func ConfigPath() string {
-	if configdir != "" {
-		return configdir
+	path := os.Getenv("AWS_CLI_OIDC_CONFIG_FILE")
+	if path != "" {
+		return path
 	}
-	path := os.Getenv("AWS_CLI_OIDC_CONFIG")
-	if path == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatalf("error: %v", err)
-		}
-		path = home + "/.aws-cli-oidc"
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
 	}
-	return path
+	return home + "/.aws-cli-oidc/config.yaml"
 }
 
-var configPath = ConfigPath() + "/config.yaml"
+var configPath = ConfigPath()
 
 func readConfig() (map[string]*providerConfig, error) {
 	out, err := ioutil.ReadFile(configPath)
