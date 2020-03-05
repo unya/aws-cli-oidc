@@ -212,8 +212,6 @@ func launch(url string, listener net.Listener) string {
 			f.Flush()
 		}
 
-		time.Sleep(100 * time.Millisecond)
-
 		c <- code
 	})
 
