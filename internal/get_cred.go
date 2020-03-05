@@ -76,7 +76,7 @@ func GetCred(providerName string, roleARN string) error {
 	if err != nil {
 		return fmt.Errorf("error: %v", err)
 	}
-	os.Stdout.Write(jsonBytes)
+	fmt.Println(string(jsonBytes))
 
 	return nil
 }
