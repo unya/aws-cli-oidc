@@ -14,11 +14,27 @@ import (
 )
 
 func RunSetup(providerName string) error {
-	_, err := runSetup(providerName)
-	return err
+	providerConfig, err := runSurvey()
+	if err != nil {
+		return err
+	}
+
+	toolConfig, err := readConfig()
+	if err != nil {
+		return fmt.Errorf("couldn't read config file")
+	}
+
+	toolConfig[providerName] = providerConfig
+
+	err = writeConfig(toolConfig)
+	if err != nil {
+		return fmt.Errorf("failed to write config file")
+	}
+
+	return nil
 }
 
-func runSetup(providerName string) (*providerConfig, error) {
+func runSurvey() (*providerConfig, error) {
 	ui := &input.UI{
 		Writer: os.Stdout,
 		Reader: os.Stdin,
@@ -84,24 +100,12 @@ func runSetup(providerName string) (*providerConfig, error) {
 		},
 	})
 
-	toolConfig, err := readConfig()
-	if err != nil {
-		return nil, fmt.Errorf("couldn't read config file")
-	}
-
-	updatedConfig := toolConfig[providerName]
-	updatedConfig.OIDCServer = oidcServer
-	updatedConfig.AuthURL = authURL
-	updatedConfig.TokenURL = tokenURL
-	updatedConfig.ClientID = clientID
-	updatedConfig.ClientSecret = clientSecret
-	updatedConfig.MaxSessionDurationSeconds = maxSessionDurationSecondsInt
-	toolConfig[providerName] = updatedConfig
-
-	err = writeConfig(toolConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to write config file")
-	}
-
-	return updatedConfig, nil
+	return &providerConfig{
+		OIDCServer:                oidcServer,
+		AuthURL:                   authURL,
+		TokenURL:                  tokenURL,
+		ClientID:                  clientID,
+		ClientSecret:              clientSecret,
+		MaxSessionDurationSeconds: maxSessionDurationSecondsInt,
+	}, nil
 }
