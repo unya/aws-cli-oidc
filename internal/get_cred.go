@@ -91,8 +91,7 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 			AuthURL:  client.config.AuthURL,
 			TokenURL: client.config.TokenURL,
 		},
-		RedirectURL: "",
-		Scopes:      []string{"openid", "email"},
+		Scopes: []string{"openid", "email"},
 	}
 
 	var token *oauth2.Token
