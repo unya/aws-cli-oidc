@@ -3,7 +3,6 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/zalando/go-keyring"
 )
 
 const expiryDelta = 10 * time.Second
@@ -33,16 +33,16 @@ func (cred AWSCredentials) Valid() bool {
 }
 
 func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
-	awsCredentialsCache := cacheFolder + "/" + client.name + "_aws.json"
+	keyringServiceNameAWS := keyringServiceName + "-aws"
 
-	jsonBytes, err := ioutil.ReadFile(awsCredentialsCache)
 	var awsCreds *AWSCredentials = nil
+	jsonString, err := keyring.Get(keyringServiceNameAWS, keyringUsername)
 	if err != nil {
-		if !os.IsNotExist(err) { // if file does not exist we are fine
+		if err != keyring.ErrNotFound {
 			return nil, err
 		}
 	} else {
-		if err := json.Unmarshal(jsonBytes, &awsCreds); err != nil {
+		if err := json.Unmarshal([]byte(jsonString), &awsCreds); err != nil {
 			return nil, err
 		}
 	}
@@ -61,18 +61,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 		return nil, err
 	}
 
-	file, err := ioutil.TempFile("", "*")
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = file.Write(awsCredsJSON)
-	if err != nil {
-		return nil, err
-	}
-
-	err = os.Rename(file.Name(), awsCredentialsCache)
-	if err != nil {
+	if err := keyring.Set(keyringServiceNameAWS, keyringUsername, string(awsCredsJSON)); err != nil {
 		return nil, err
 	}
 

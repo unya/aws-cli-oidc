@@ -3,14 +3,13 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/pkg/browser"
+	"github.com/zalando/go-keyring"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
@@ -82,7 +81,8 @@ func GetCred(providerName string, roleARN string) error {
 }
 
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
-	oidcTokenCache := cacheFolder + "/" + client.name + "_oidc.json"
+	keyringServiceNameOIDC := keyringServiceName + "-oidc"
+
 	conf := &oauth2.Config{
 		ClientID:     client.config.ClientID,
 		ClientSecret: client.config.ClientSecret,
@@ -97,13 +97,13 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 	writeBack := false
 
 	var oidcToken *oidcToken = nil
-	jsonRaw, err := ioutil.ReadFile(oidcTokenCache)
+	jsonRaw, err := keyring.Get(keyringServiceNameOIDC, keyringUsername)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if err != keyring.ErrNotFound {
 			return nil, err
 		}
 	} else {
-		if err := json.Unmarshal(jsonRaw, &oidcToken); err != nil {
+		if err := json.Unmarshal([]byte(jsonRaw), &oidcToken); err != nil {
 			return nil, err
 		}
 	}
@@ -135,19 +135,7 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 
 	if writeBack {
 		tokenJSON, _ := json.Marshal(oidcToken)
-
-		file, err := ioutil.TempFile("", "*")
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = file.Write(tokenJSON)
-		if err != nil {
-			return nil, err
-		}
-
-		err = os.Rename(file.Name(), oidcTokenCache)
-		if err != nil {
+		if err := keyring.Set(keyringServiceNameOIDC, keyringUsername, string(tokenJSON)); err != nil {
 			return nil, err
 		}
 	}
