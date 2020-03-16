@@ -8,9 +8,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var keyringServiceName = "aws-cli-oidc"
-var keyringUsername = os.Getenv("USER")
-
 type providerConfig struct {
 	OIDCServer                string `yaml:"oidc_server"`
 	AuthURL                   string `yaml:"auth_url"`

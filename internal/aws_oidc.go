@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/zalando/go-keyring"
 )
 
 const expiryDelta = 10 * time.Second
@@ -33,12 +32,10 @@ func (cred AWSCredentials) Valid() bool {
 }
 
 func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
-	keyringServiceNameAWS := keyringServiceName + "-aws"
-
 	var awsCreds *AWSCredentials = nil
-	jsonString, err := keyring.Get(keyringServiceNameAWS, keyringUsername)
+	jsonString, err := getAWSTokenCache()
 	if err != nil {
-		if err != keyring.ErrNotFound {
+		if err != ErrNotFound {
 			return nil, err
 		}
 	} else {
@@ -61,7 +58,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 		return nil, err
 	}
 
-	if err := keyring.Set(keyringServiceNameAWS, keyringUsername, string(awsCredsJSON)); err != nil {
+	if err := saveAWSTokenCache(string(awsCredsJSON)); err != nil {
 		return nil, err
 	}
 

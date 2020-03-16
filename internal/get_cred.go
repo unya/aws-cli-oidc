@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/browser"
-	"github.com/zalando/go-keyring"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
@@ -81,8 +80,6 @@ func GetCred(providerName string, roleARN string) error {
 }
 
 func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
-	keyringServiceNameOIDC := keyringServiceName + "-oidc"
-
 	conf := &oauth2.Config{
 		ClientID:     client.config.ClientID,
 		ClientSecret: client.config.ClientSecret,
@@ -97,9 +94,9 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 	writeBack := false
 
 	var oidcToken *oidcToken = nil
-	jsonRaw, err := keyring.Get(keyringServiceNameOIDC, keyringUsername)
+	jsonRaw, err := getOIDCTokenCache()
 	if err != nil {
-		if err != keyring.ErrNotFound {
+		if err != ErrNotFound {
 			return nil, err
 		}
 	} else {
@@ -135,7 +132,7 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 
 	if writeBack {
 		tokenJSON, _ := json.Marshal(oidcToken)
-		if err := keyring.Set(keyringServiceNameOIDC, keyringUsername, string(tokenJSON)); err != nil {
+		if err := saveOIDCTokenCache(string(tokenJSON)); err != nil {
 			return nil, err
 		}
 	}

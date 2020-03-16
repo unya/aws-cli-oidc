@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/docopt/docopt-go"
@@ -15,6 +16,7 @@ func main() {
 Usage:
   aws-cli-oidc get-cred <idp> <role>
   aws-cli-oidc setup <idp>
+  aws-cli-oidc cache (show | clear)
   aws-cli-oidc -h | --help
 
 Options:
@@ -30,6 +32,9 @@ Options:
 		Setup        bool   `docopt:"setup"`
 		ProviderName string `docopt:"<idp>"`
 		RoleARN      string `docopt:"<role>"`
+		Cache        bool   `docopt:"cache"`
+		Show         bool   `docopt:"show"`
+		Clear        bool   `docopt:"clear"`
 	}
 	if err := arguments.Bind(&conf); err != nil {
 		log.Fatalf("%v\n", err)
@@ -44,6 +49,18 @@ Options:
 		err := internal.RunSetup(conf.ProviderName)
 		if err != nil {
 			log.Fatalf("Error during setup: %v\n", err)
+		}
+	} else if conf.Cache {
+		if conf.Show {
+			output, err := internal.CacheShow()
+			if err != nil {
+				log.Fatalf("Error during cache read: %v\n", err)
+			}
+			fmt.Print(output)
+		} else if conf.Clear {
+			if err := internal.CacheClear(); err != nil {
+				log.Fatalf("Error during cache clear: %v\n", err)
+			}
 		}
 	}
 }
