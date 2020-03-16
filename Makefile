@@ -5,6 +5,7 @@ LDFLAGS := -ldflags="-s -w -extldflags -static"
 DIST_DIRS := find * -type d -exec
 
 build:
+	mkdir -p bin && \
 	go build $(LDFLAGS) -o ./bin/ ./cmd/...
 
 .PHONY: clean
