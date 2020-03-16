@@ -40,17 +40,18 @@ Options:
 		log.Fatalf("%v\n", err)
 	}
 
-	if conf.GetCred {
+	switch {
+	case conf.GetCred:
 		err := internal.GetCred(conf.ProviderName, conf.RoleARN)
 		if err != nil {
 			log.Fatalf("Error during get-cred: %v\n", err)
 		}
-	} else if conf.Setup {
+	case conf.Setup:
 		err := internal.RunSetup(conf.ProviderName)
 		if err != nil {
 			log.Fatalf("Error during setup: %v\n", err)
 		}
-	} else if conf.Cache {
+	case conf.Cache:
 		if conf.Show {
 			output, err := internal.CacheShow()
 			if err != nil {
