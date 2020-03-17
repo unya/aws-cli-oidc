@@ -56,8 +56,23 @@ Before using this tool, the system administrator need to setup the following con
 
 ## Install
 
-Download from the [Releases page](https://github.com/mbrtargeting/aws-cli-oidc/releases).
+### Homebrew
 
+If you are on a Mac, you can use [Homebrew](https://brew.sh) to install the tool:
+```shell script
+brew tap mbrtargeting/mbr
+brew install aws-cli-oidc
+```
+
+### Binary Releases
+You can download binary releases for all major operating system from the [Releases page](https://github.com/mbrtargeting/aws-cli-oidc/releases).
+
+### Build From Source
+Alternatively, you can also build from source.
+```shell script
+make build
+```
+After building, the binaries will reside in the `bin/` subfolder.
 
 ## Usage
 
