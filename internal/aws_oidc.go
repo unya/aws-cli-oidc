@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -8,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/defaults"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 const expiryDelta = 10 * time.Second
@@ -68,13 +69,6 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 }
 
 func assumeRoleWithWebIdentity(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
-	sess, err := session.NewSession()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create session: %v", err)
-	}
-
-	svc := sts.New(sess)
-
 	username := os.Getenv("USER")
 	split := strings.SplitN(roleARN, "/", 2)
 	rolename := client.name
@@ -84,12 +78,15 @@ func assumeRoleWithWebIdentity(client *OIDCClient, idToken string, roleARN strin
 
 	log.Println("Requesting AWS credentials using ID Token")
 
-	resp, err := svc.AssumeRoleWithWebIdentity(&sts.AssumeRoleWithWebIdentityInput{
+	cfg := defaults.Config()
+	cfg.Region = "eu-central-1"
+	req := sts.New(cfg).AssumeRoleWithWebIdentityRequest(&sts.AssumeRoleWithWebIdentityInput{
 		RoleArn:          aws.String(roleARN),
 		RoleSessionName:  aws.String(username + "@" + rolename),
 		WebIdentityToken: aws.String(idToken),
 		DurationSeconds:  aws.Int64(durationSeconds),
 	})
+	resp, err := req.Send(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving STS credentials using ID Token: %v", err)
 	}
