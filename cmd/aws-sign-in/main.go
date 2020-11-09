@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
@@ -21,7 +22,7 @@ func main() {
 	usage := `aws-sign-in.
 
 Usage:
-  aws-sign-in
+  aws-sign-in [<duration>]
   aws-sign-in -h | --help
 
 Options:
@@ -33,6 +34,7 @@ Options:
 	}
 
 	var conf struct {
+		Duration int `docopt:"<duration>"`
 	}
 	if err := arguments.Bind(&conf); err != nil {
 		log.Fatalf("%v\n", err)
@@ -49,7 +51,7 @@ Options:
 		log.Fatalf("Error retrieving credentials: %v\n", err)
 	}
 
-	signinToken, err := getSignInToken(creds)
+	signinToken, err := getSignInToken(creds, conf.Duration)
 	if err != nil {
 		log.Fatalf("Couldn't obtain sign-in token: %v\n", err)
 	}
@@ -62,7 +64,7 @@ Options:
 	fmt.Printf("If the browser didn't open, please visit the following url to sign in to the AWS console: %v\n", loginURL)
 }
 
-func getSignInToken(creds aws.Credentials) (string, error) {
+func getSignInToken(creds aws.Credentials, duration int) (string, error) {
 	reqJSON := fmt.Sprintf(`{"sessionId":"%s","sessionKey":"%s","sessionToken":"%s"}`,
 		creds.AccessKeyID,
 		creds.SecretAccessKey,
@@ -73,6 +75,9 @@ func getSignInToken(creds aws.Credentials) (string, error) {
 
 	values := url.Values{}
 	values.Add("Action", "getSigninToken")
+	if duration != 0 {
+		values.Add("DurationSeconds", strconv.Itoa(duration))
+	}
 	values.Add("Session", reqJSON)
 
 	endpoint.RawQuery = values.Encode()
