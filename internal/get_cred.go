@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/pkg/browser"
@@ -50,8 +51,8 @@ func GetCred(providerName string, roleARN string) error {
 		return fmt.Errorf("failed to login OIDC provider: %v", err)
 	}
 	client := &OIDCClient{providerName, config}
-
-	tokenResponse, err := getOIDCToken(client)
+	role := ARNtoShortName(roleARN)
+	tokenResponse, err := getOIDCToken(client, role)
 	if err != nil {
 		return fmt.Errorf("failed to login the OIDC provider: %v", err)
 	}
@@ -79,7 +80,13 @@ func GetCred(providerName string, roleARN string) error {
 	return nil
 }
 
-func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
+func ARNtoShortName(arn string) string {
+	r := regexp.MustCompile("arn:aws:iam:.*:\\d+:role/(\\S+)")
+	role := r.FindStringSubmatch(arn)[1]
+	return role
+}
+
+func getOIDCToken(client *OIDCClient, role string) (*oidcToken, error) {
 	conf := &oauth2.Config{
 		ClientID:     client.config.ClientID,
 		ClientSecret: client.config.ClientSecret,
@@ -87,7 +94,7 @@ func getOIDCToken(client *OIDCClient) (*oidcToken, error) {
 			AuthURL:  client.config.AuthURL,
 			TokenURL: client.config.TokenURL,
 		},
-		Scopes: []string{"openid", "email"},
+		Scopes: []string{"openid", "email", fmt.Sprintf("role:%s", role)},
 	}
 
 	var token *oauth2.Token

@@ -69,10 +69,11 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 }
 
 func assumeRoleWithWebIdentity(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
-	if(strings.Contains(os.Getenv("USER"), "\\") {
-		username := strings.ToUpper(strings.SplitN(os.Getenv("USER"), "\\", 2)[1])
+	var username string
+	if strings.Contains(os.Getenv("USER"), "\\") {
+		username = strings.ToUpper(strings.SplitN(os.Getenv("USER"), "\\", 2)[1])
 	} else {
-		username := os.Getenv("USER")
+		username = os.Getenv("USER")
 	}
 	split := strings.SplitN(roleARN, "/", 2)
 	rolename := client.name
