@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/docopt/docopt-go"
-	"github.com/mbrtargeting/aws-cli-oidc/internal"
+	"github.com/unya/aws-cli-oidc/internal"
 )
 
 func main() {

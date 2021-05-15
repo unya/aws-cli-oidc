@@ -1,10 +1,8 @@
-module github.com/mbrtargeting/aws-cli-oidc
+module github.com/unya/aws-cli-oidc
 
 require (
-	github.com/aws/aws-sdk-go v1.15.50
 	github.com/aws/aws-sdk-go-v2 v0.24.0
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
-	github.com/mattn/go-shellwords v1.0.10
 	github.com/natsukagami/go-input v0.0.0-20180603034138-38bb793e9754
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/smartystreets/goconvey v1.6.4 // indirect
