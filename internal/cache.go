@@ -1,13 +1,27 @@
 package internal
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zalando/go-keyring"
 	"os"
 	"strings"
-
-	"github.com/zalando/go-keyring"
+	"sync"
 )
+
+type SingleCache struct {
+	mu         sync.Mutex        `json:-`
+	Id         string            `json:"id"`
+	OidcTokens map[string]string `json:"oidc"`
+	AwsTokens  map[string]string `json:"aws"`
+}
+
+func init() {
+	SingletonCache.AwsTokens = make(map[string]string)
+	SingletonCache.OidcTokens = make(map[string]string)
+	SingletonCache.Load()
+}
 
 var ErrNotFound = errors.New("cache entry not found")
 
@@ -16,55 +30,76 @@ var keyringUsername = os.Getenv("USER")
 var keyringServiceNameAWS = keyringServiceName + "-aws"
 var keyringServiceNameOIDC = keyringServiceName + "-oidc"
 
-func getTokenCache(serviceName string) (string, error) {
-	jsonString, err := keyring.Get(serviceName, keyringUsername)
+var SingletonCache SingleCache
+
+func (cache *SingleCache) Load() error {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	jsonString, err := keyring.Get(keyringServiceName, keyringUsername)
 	if err != nil {
 		if err == keyring.ErrNotFound {
-			return "", ErrNotFound
+			return nil
 		}
-		return "", err
-	}
-	return jsonString, nil
-}
-
-func saveTokenCache(serviceName string, awsCredsJSON string) error {
-	if err := keyring.Set(serviceName, keyringUsername, string(awsCredsJSON)); err != nil {
 		return err
 	}
-	return nil
+	err = json.Unmarshal([]byte(jsonString), &cache)
+	return err
 }
 
-func getAWSTokenCache() (string, error) {
-	return getTokenCache(keyringServiceNameAWS)
+func (cache *SingleCache) Save() error {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	jsonString, err := json.Marshal(cache)
+	if err != nil {
+		return err
+	}
+	err = keyring.Set(keyringServiceName, keyringUsername, string(jsonString))
+	return err
 }
 
-func saveAWSTokenCache(awsCredsJSON string) error {
-	return saveTokenCache(keyringServiceNameAWS, awsCredsJSON)
+func getAWSTokenCache(role string) (string, error) {
+	token, err := SingletonCache.AwsTokens[role]
+	if err == false {
+		return "", ErrNotFound
+	}
+	return token, nil
 }
 
-func getOIDCTokenCache() (string, error) {
-	return getTokenCache(keyringServiceNameOIDC)
+func saveAWSTokenCache(awsCredsJSON string, role string) error {
+	SingletonCache.AwsTokens[role] = awsCredsJSON
+	return SingletonCache.Save()
 }
 
-func saveOIDCTokenCache(awsCredsJSON string) error {
-	return saveTokenCache(keyringServiceNameOIDC, awsCredsJSON)
+func getOIDCTokenCache(role string) (string, error) {
+	token, err := SingletonCache.OidcTokens[role]
+	if err == false {
+		return "", ErrNotFound
+	}
+	return token, nil
+}
+
+func saveOIDCTokenCache(awsCredsJSON string, role string) error {
+	SingletonCache.OidcTokens[role] = awsCredsJSON
+	return SingletonCache.Save()
 }
 
 func CacheShow() (string, error) {
 	var response strings.Builder
 
-	for _, service := range []string{keyringServiceNameAWS, keyringServiceNameOIDC} {
-		response.WriteString(fmt.Sprintf("[%s,%s]: ", service, keyringUsername))
-		cache, err := getTokenCache(service)
-		if err != nil {
-			if err != ErrNotFound {
-				return "", err
-			}
-			response.WriteString("<not set>\n")
-			continue
-		}
-		response.WriteString(cache)
-		response.WriteByte('\n')
+	err := SingletonCache.Load()
+	if err != nil {
+		return "", err
+	}
+
+	SingletonCache.mu.Lock()
+	defer SingletonCache.mu.Unlock()
+	response.WriteString(fmt.Sprintf("OIDC Tokens for %s\n", keyringUsername))
+	for role, token := range SingletonCache.OidcTokens {
+		response.WriteString(fmt.Sprintf("\t[%s]: \"%s\"\n", role, token))
+	}
+	response.WriteString(fmt.Sprintf("AWS Tokens for %s\n", keyringUsername))
+	for role, token := range SingletonCache.AwsTokens {
+		response.WriteString(fmt.Sprintf("\t[%s]: \"%s\"\n", role, token))
 	}
 
 	return response.String(), nil

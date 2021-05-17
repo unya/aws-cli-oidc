@@ -94,14 +94,14 @@ func getOIDCToken(client *OIDCClient, role string) (*oidcToken, error) {
 			AuthURL:  client.config.AuthURL,
 			TokenURL: client.config.TokenURL,
 		},
-		Scopes: []string{"openid", "email", fmt.Sprintf("role:%s", role)},
+		Scopes: []string{"openid", "email"},
 	}
 
 	var token *oauth2.Token
 	writeBack := false
 
 	var oidcToken *oidcToken = nil
-	jsonRaw, err := getOIDCTokenCache()
+	jsonRaw, err := getOIDCTokenCache(role)
 	if err != nil {
 		if err != ErrNotFound {
 			return nil, err
@@ -129,7 +129,7 @@ func getOIDCToken(client *OIDCClient, role string) (*oidcToken, error) {
 	if token == nil { // cache miss or expired refresh token
 		writeBack = true
 
-		token, err = doLogin(conf)
+		token, err = doLogin(conf, role)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +139,7 @@ func getOIDCToken(client *OIDCClient, role string) (*oidcToken, error) {
 
 	if writeBack {
 		tokenJSON, _ := json.Marshal(oidcToken)
-		if err := saveOIDCTokenCache(string(tokenJSON)); err != nil {
+		if err := saveOIDCTokenCache(string(tokenJSON), role); err != nil {
 			return nil, err
 		}
 	}
@@ -147,7 +147,7 @@ func getOIDCToken(client *OIDCClient, role string) (*oidcToken, error) {
 	return oidcToken, nil
 }
 
-func doLogin(conf *oauth2.Config) (*oauth2.Token, error) {
+func doLogin(conf *oauth2.Config, role string) (*oauth2.Token, error) {
 	address := "localhost:52327"
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -157,8 +157,8 @@ func doLogin(conf *oauth2.Config) (*oauth2.Token, error) {
 	conf.RedirectURL = "http://" + address
 
 	ctx := context.Background()
-
-	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+	roleOption := oauth2.SetAuthURLParam("role", role)
+	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.ApprovalForce, roleOption)
 	println(url)
 
 	code := launch(url, listener)
