@@ -34,7 +34,7 @@ func (cred AWSCredentials) Valid() bool {
 
 func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, durationSeconds int64) (*AWSCredentials, error) {
 	role := strings.SplitN(roleARN, "/", 2)[1]
-	awsCredsBag := map[string]*AWSCredentials{}
+	var awsCredsBag AWSCredentials
 	jsonString, err := getAWSTokenCache(role)
 	if err != nil {
 		if err != ErrNotFound {
@@ -46,9 +46,9 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 		}
 	}
 
-	awsCreds, awsCredsFound := awsCredsBag[roleARN]
-	if awsCredsFound && awsCreds.Valid() {
-		return awsCreds, nil
+	awsCreds := awsCredsBag
+	if awsCreds.Valid() {
+		return &awsCreds, nil
 	}
 
 	token, err := assumeRoleWithWebIdentity(client, idToken, roleARN, durationSeconds)
@@ -56,7 +56,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 		return nil, err
 	}
 
-	awsCredsBag[roleARN] = token
+	awsCredsBag = *token
 	awsCredsBagJSON, err := json.Marshal(awsCredsBag)
 	if err != nil {
 		return nil, err

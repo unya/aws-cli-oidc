@@ -95,22 +95,27 @@ func CacheShow() (string, error) {
 	defer SingletonCache.mu.Unlock()
 	response.WriteString(fmt.Sprintf("OIDC Tokens for %s\n", keyringUsername))
 	for role, token := range SingletonCache.OidcTokens {
-		response.WriteString(fmt.Sprintf("\t[%s]: \"%s\"\n", role, token))
+		var decodedToken oidcToken
+		err := json.Unmarshal([]byte(token), &decodedToken)
+		if err != nil {
+			continue
+		}
+		response.WriteString(fmt.Sprintf("\t[%s]: %v\n", role, decodedToken.Expiry))
 	}
 	response.WriteString(fmt.Sprintf("AWS Tokens for %s\n", keyringUsername))
 	for role, token := range SingletonCache.AwsTokens {
-		response.WriteString(fmt.Sprintf("\t[%s]: \"%s\"\n", role, token))
+		var decodedToken AWSCredentials
+		err := json.Unmarshal([]byte(token), &decodedToken)
+		if err != nil {
+			continue
+		}
+		response.WriteString(fmt.Sprintf("\t[%s]: %v\n", role, decodedToken.Expires))
 	}
 
 	return response.String(), nil
 }
 
 func CacheClear() error {
-	for _, service := range []string{keyringServiceNameAWS, keyringServiceNameOIDC} {
-		err := keyring.Delete(service, keyringUsername)
-		if err != nil && err != keyring.ErrNotFound {
-			return err
-		}
-	}
+	keyring.Delete(keyringServiceName, keyringUsername)
 	return nil
 }
