@@ -80,7 +80,8 @@ After building, the binaries will reside in the `bin/` subfolder.
 aws-cli-oidc.
 
 Usage:
-  aws-cli-oidc get-cred <idp> <role>
+  aws-cli-oidc get-cred <idp> <role> [print] [<seconds>]
+  aws-cli-oidc cache (show [token]| clear)
   aws-cli-oidc setup <idp>
   aws-cli-oidc -h | --help
 
@@ -102,6 +103,7 @@ google:
   token_url: https://oauth2.googleapis.com/token
   client_id: my_client_id
   client_secret: my_client_secret
+  aws_region: us-east-1
   max_session_duration_seconds: 3600
 ```
 This file must be saved as `$AWS_CLI_OIDC_CONFIG/config.yaml` where `AWS_CLI_OIDC_CONFIG` is an environment variable
@@ -143,3 +145,4 @@ Licensed under the [MIT](/LICENSE) license.
 
 - [Hiroyuki Wada](https://github.com/wadahiro)
 - [Ströer SSP GmbH](https://www.stroeer.de/konvergenz-konzepte/daten-technologien/stroeer-ssp.html)
+- [Michael Xie](https://github.com/mxie1563)
