@@ -14,6 +14,7 @@ type providerConfig struct {
 	TokenURL                  string `yaml:"token_url"`
 	ClientID                  string `yaml:"client_id"`
 	ClientSecret              string `yaml:"client_secret"`
+	Region                    string `yaml:"aws_region"`
 	MaxSessionDurationSeconds int64  `yaml:"max_session_duration_seconds"`
 }
 

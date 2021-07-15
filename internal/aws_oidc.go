@@ -85,7 +85,7 @@ func assumeRoleWithWebIdentity(client *OIDCClient, idToken string, roleARN strin
 	log.Println("Requesting AWS credentials using ID Token")
 
 	cfg := defaults.Config()
-	cfg.Region = "eu-central-1"
+	cfg.Region = client.config.Region
 	req := sts.New(cfg).AssumeRoleWithWebIdentityRequest(&sts.AssumeRoleWithWebIdentityInput{
 		RoleArn:          aws.String(roleARN),
 		RoleSessionName:  aws.String(username + "@" + rolename),
