@@ -76,8 +76,6 @@ func getOIDCTokenCache(role string) (string, error) {
 	if err == false {
 		return "", ErrNotFound
 	}
-	fmt.Println(string(role))
-	fmt.Println(string(token))
 	return token, nil
 }
 

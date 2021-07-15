@@ -14,7 +14,7 @@ func main() {
 	usage := `aws-cli-oidc.
 
 Usage:
-  aws-cli-oidc get-cred <idp> <role> [<seconds>] [print]
+  aws-cli-oidc get-cred <idp> <role> [print] [<seconds>]
   aws-cli-oidc setup <idp>
   aws-cli-oidc cache (show [token]| clear)
   aws-cli-oidc -h | --help
