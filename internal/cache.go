@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zalando/go-keyring"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/zalando/go-keyring"
 )
 
 type SingleCache struct {
@@ -75,6 +76,8 @@ func getOIDCTokenCache(role string) (string, error) {
 	if err == false {
 		return "", ErrNotFound
 	}
+	fmt.Println(string(role))
+	fmt.Println(string(token))
 	return token, nil
 }
 
@@ -83,7 +86,7 @@ func saveOIDCTokenCache(awsCredsJSON string, role string) error {
 	return SingletonCache.Save()
 }
 
-func CacheShow() (string, error) {
+func CacheShow(showToken bool) (string, error) {
 	var response strings.Builder
 
 	err := SingletonCache.Load()
@@ -93,23 +96,32 @@ func CacheShow() (string, error) {
 
 	SingletonCache.mu.Lock()
 	defer SingletonCache.mu.Unlock()
-	response.WriteString(fmt.Sprintf("OIDC Tokens for %s\n", keyringUsername))
+	response.WriteString(fmt.Sprintf("OIDC Tokens for %s:\n", keyringUsername))
 	for role, token := range SingletonCache.OidcTokens {
 		var decodedToken oidcToken
 		err := json.Unmarshal([]byte(token), &decodedToken)
 		if err != nil {
 			continue
 		}
-		response.WriteString(fmt.Sprintf("\t[%s]: %v\n", role, decodedToken.Expiry))
+		if showToken {
+			response.WriteString(fmt.Sprintf("[%s]: %v\n", role, token))
+		} else {
+			response.WriteString(fmt.Sprintf("\t[%s]: %v\n", role, decodedToken.Expiry))
+		}
 	}
-	response.WriteString(fmt.Sprintf("AWS Tokens for %s\n", keyringUsername))
+	response.WriteString(fmt.Sprintf("AWS Tokens for %s:\n", keyringUsername))
 	for role, token := range SingletonCache.AwsTokens {
 		var decodedToken AWSCredentials
 		err := json.Unmarshal([]byte(token), &decodedToken)
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
-		response.WriteString(fmt.Sprintf("\t[%s]: %v\n", role, decodedToken.Expires))
+		if showToken {
+			response.WriteString(fmt.Sprintf("[%s]: %v\n", role, token))
+		} else {
+			response.WriteString(fmt.Sprintf("\t[%s]: %v\n", role, decodedToken.Expires))
+		}
 	}
 
 	return response.String(), nil

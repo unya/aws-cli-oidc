@@ -14,9 +14,9 @@ func main() {
 	usage := `aws-cli-oidc.
 
 Usage:
-  aws-cli-oidc get-cred <idp> <role>
+  aws-cli-oidc get-cred <idp> <role> [<seconds>] [print]
   aws-cli-oidc setup <idp>
-  aws-cli-oidc cache (show | clear)
+  aws-cli-oidc cache (show [token]| clear)
   aws-cli-oidc -h | --help
 
 Options:
@@ -32,8 +32,11 @@ Options:
 		Setup        bool   `docopt:"setup"`
 		ProviderName string `docopt:"<idp>"`
 		RoleARN      string `docopt:"<role>"`
+		Expire       int64  `docopt:"<seconds>"`
+		PrintCred    bool   `docopt:"print"`
 		Cache        bool   `docopt:"cache"`
 		Show         bool   `docopt:"show"`
+		Token        bool   `docopt:"token"`
 		Clear        bool   `docopt:"clear"`
 	}
 	if err := arguments.Bind(&conf); err != nil {
@@ -42,7 +45,16 @@ Options:
 
 	switch {
 	case conf.GetCred:
-		err := internal.GetCred(conf.ProviderName, conf.RoleARN)
+		printCred := false
+		var expire int64
+		expire = 0
+		if conf.PrintCred {
+			printCred = true
+		}
+		if conf.Expire > 0 {
+			expire = conf.Expire
+		}
+		err := internal.GetCred(conf.ProviderName, conf.RoleARN, printCred, expire)
 		if err != nil {
 			log.Fatalf("Error during get-cred: %v\n", err)
 		}
@@ -53,7 +65,11 @@ Options:
 		}
 	case conf.Cache:
 		if conf.Show {
-			output, err := internal.CacheShow()
+			showToken := false
+			if conf.Token {
+				showToken = true
+			}
+			output, err := internal.CacheShow(showToken)
 			if err != nil {
 				log.Fatalf("Error during cache read: %v\n", err)
 			}
