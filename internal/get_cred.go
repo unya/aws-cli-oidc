@@ -6,7 +6,9 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/pkg/browser"
@@ -45,7 +47,7 @@ func (t oidcToken) OAuth2Token() *oauth2.Token {
 	})
 }
 
-func GetCred(providerName string, roleARN string) error {
+func GetCred(providerName string, roleARN string, printCred bool, expire int64) error {
 	config, err := readProviderConfig(providerName)
 	if err != nil {
 		return fmt.Errorf("failed to login OIDC provider: %v", err)
@@ -59,24 +61,40 @@ func GetCred(providerName string, roleARN string) error {
 
 	log.Println("Login successful!")
 
-	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, client.config.MaxSessionDurationSeconds)
+	var duration int64
+	if expire > client.config.MaxSessionDurationSeconds || expire == 0 {
+		duration = client.config.MaxSessionDurationSeconds
+	} else {
+		if expire < 900 {
+			duration = 900
+		} else {
+			duration = expire
+		}
+	}
+	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, duration)
 	if err != nil {
 		return fmt.Errorf("unable to get AWS Credentials: %v", err)
 	}
 
-	awsCredsJSON := AWSCredentialsJSON{
-		Version:         1,
-		AccessKeyID:     awsCreds.AWSAccessKey,
-		SecretAccessKey: awsCreds.AWSSecretKey,
-		SessionToken:    awsCreds.AWSSessionToken,
-	}
+	if printCred {
+		Writeln("")
+		Export("AWS_ACCESS_KEY_ID", awsCreds.AWSAccessKey)
+		Export("AWS_SECRET_ACCESS_KEY", awsCreds.AWSSecretKey)
+		Export("AWS_SESSION_TOKEN", awsCreds.AWSSessionToken)
+	} else {
+		awsCredsJSON := AWSCredentialsJSON{
+			Version:         1,
+			AccessKeyID:     awsCreds.AWSAccessKey,
+			SecretAccessKey: awsCreds.AWSSecretKey,
+			SessionToken:    awsCreds.AWSSessionToken,
+		}
 
-	jsonBytes, err := json.Marshal(awsCredsJSON)
-	if err != nil {
-		return fmt.Errorf("error: %v", err)
+		jsonBytes, err := json.Marshal(awsCredsJSON)
+		if err != nil {
+			return fmt.Errorf("error: %v", err)
+		}
+		fmt.Println(string(jsonBytes))
 	}
-	fmt.Println(string(jsonBytes))
-
 	return nil
 }
 
@@ -221,4 +239,18 @@ func launch(url string, listener net.Listener) string {
 	}
 
 	return code
+}
+
+func Writeln(format string, msg ...interface{}) {
+	fmt.Fprintln(os.Stderr, fmt.Sprintf(format, msg...))
+}
+
+func Export(key string, value string) {
+	var msg string
+	if runtime.GOOS == "windows" {
+		msg = fmt.Sprintf("set %s=%s\n", key, value)
+	} else {
+		msg = fmt.Sprintf("export %s=%s\n", key, value)
+	}
+	fmt.Fprint(os.Stdout, msg)
 }
