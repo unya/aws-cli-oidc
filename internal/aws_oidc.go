@@ -48,6 +48,7 @@ func GetCredentialsWithOIDC(client *OIDCClient, idToken string, roleARN string, 
 
 	awsCreds := awsCredsBag
 	if awsCreds.Valid() {
+		log.Println("Retrieve active valid AWS STS credentials from cache")
 		return &awsCreds, nil
 	}
 
@@ -82,7 +83,7 @@ func assumeRoleWithWebIdentity(client *OIDCClient, idToken string, roleARN strin
 		rolename = split[1]
 	}
 
-	log.Println("Requesting AWS credentials using ID Token")
+	log.Printf("Requesting AWS STS credentials (%d seconds) using OIDC Token\n", durationSeconds)
 
 	cfg := defaults.Config()
 	cfg.Region = client.config.Region

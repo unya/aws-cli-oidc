@@ -62,10 +62,14 @@ func GetCred(providerName string, roleARN string, printCred bool, expire int64) 
 	log.Println("Login successful!")
 
 	var duration int64
-	if expire > client.config.MaxSessionDurationSeconds {
+	if expire > client.config.MaxSessionDurationSeconds || expire == 0 {
 		duration = client.config.MaxSessionDurationSeconds
 	} else {
-		duration = expire
+		if expire < 900 {
+			duration = 900
+		} else {
+			duration = expire
+		}
 	}
 	awsCreds, err := GetCredentialsWithOIDC(client, tokenResponse.IDToken, roleARN, duration)
 	if err != nil {
